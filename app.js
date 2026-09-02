@@ -14,11 +14,8 @@ const ctx = canvas.getContext("2d");
 // ==========================================
 
 const TILE_SIZE = 32;
-
-// 32 × 32 tiles per chunk
 const CHUNK_SIZE = 32;
 
-// World seed
 const WORLD_SEED = 123456;
 
 
@@ -29,7 +26,6 @@ const WORLD_SEED = 123456;
 const camera = {
     x: 0,
     y: 0,
-
     speed: 500
 };
 
@@ -37,10 +33,6 @@ const camera = {
 // ==========================================
 // ACTIVE LAYER
 // ==========================================
-
-// 1 = Underground
-// 2 = Ground
-// 3 = Build
 
 let currentLayer = 2;
 
@@ -53,10 +45,10 @@ const keys = {};
 
 window.addEventListener("keydown", (event) => {
 
-    keys[event.key.toLowerCase()] = true;
+    const key = event.key.toLowerCase();
 
+    keys[key] = true;
 
-    // Layer switching
 
     if (event.key === "1") {
         currentLayer = 1;
@@ -84,9 +76,6 @@ window.addEventListener("keyup", (event) => {
 // SEEDED RANDOM
 // ==========================================
 
-// Creates deterministic random numbers.
-// Same coordinates + same seed = same world.
-
 function seededRandom(x, y, extra = 0) {
 
     let value =
@@ -103,80 +92,100 @@ function seededRandom(x, y, extra = 0) {
 
 
 // ==========================================
-// GET TILE
+// WORLD HASH
 // ==========================================
 
-function getTile(worldX, worldY, layer) {
+// Geeft een vaste unieke waarde voor een positie.
+// Zelfde positie + zelfde seed = altijd hetzelfde.
+
+function worldHash(x, y, extra = 0) {
+
+    const value =
+        x * 73856093 ^
+        y * 19349663 ^
+        WORLD_SEED * 83492791 ^
+        extra * 2654435761;
+
+    return Math.abs(value);
+
+}
 
 
-    // --------------------------
-    // UNDERGROUND
-    // --------------------------
+// ==========================================
+// TREE GENERATION
+// ==========================================
 
-    if (layer === 1) {
+function isTreeCenter(x, y) {
 
-        const random = seededRandom(
-            worldX,
-            worldY,
-            1
-        );
+    const random = seededRandom(x, y, 50);
 
+    // Kans op een boom
+    return random < 0.008;
 
-        // Extremely rare diamond
-        if (random < 0.001) {
-
-            return "diamond";
-
-        }
+}
 
 
-        // Rare gold
-        if (random < 0.005) {
+// ==========================================
+// GET BUILD TILE
+// ==========================================
 
-            return "gold";
-
-        }
-
-
-        // Iron
-        if (random < 0.02) {
-
-            return "iron";
-
-        }
+function getBuildTile(worldX, worldY) {
 
 
-        // Coal
-        if (random < 0.06) {
+    // --------------------------------------
+    // CHECK EIGEN POSITIE
+    // --------------------------------------
 
-            return "coal";
+    // Als hier een boomcentrum is,
+    // staat hier de log.
 
-        }
+    if (isTreeCenter(worldX, worldY)) {
 
-
-        return "stone";
+        return "log";
 
     }
 
 
-    // --------------------------
-    // GROUND
-    // --------------------------
+    // --------------------------------------
+    // CHECK NABURIGE POSITIES
+    // --------------------------------------
 
-    if (layer === 2) {
+    // Een boom heeft 1 log in het midden
+    // en leaves rondom de log.
 
-        return "grass";
+    for (let offsetY = -1; offsetY <= 1; offsetY++) {
 
-    }
+        for (let offsetX = -1; offsetX <= 1; offsetX++) {
 
 
-    // --------------------------
-    // BUILD LAYER
-    // --------------------------
+            // Midden overslaan
+            if (
+                offsetX === 0 &&
+                offsetY === 0
+            ) {
+                continue;
+            }
 
-    if (layer === 3) {
 
-        return null;
+            const treeX =
+                worldX - offsetX;
+
+            const treeY =
+                worldY - offsetY;
+
+
+            if (
+                isTreeCenter(
+                    treeX,
+                    treeY
+                )
+            ) {
+
+                return "leaves";
+
+            }
+
+        }
 
     }
 
@@ -187,7 +196,331 @@ function getTile(worldX, worldY, layer) {
 
 
 // ==========================================
-// TILE COLORS
+// ORE GENERATION
+// ==========================================
+
+// Een ore groep heeft maximaal 4 blocks.
+
+function getOreAt(worldX, worldY) {
+
+
+    // We kijken naar mogelijke
+    // ore-cluster centers in de buurt.
+
+    for (
+        let centerY = worldY - 2;
+        centerY <= worldY + 2;
+        centerY++
+    ) {
+
+        for (
+            let centerX = worldX - 2;
+            centerX <= worldX + 2;
+            centerX++
+        ) {
+
+
+            const random =
+                seededRandom(
+                    centerX,
+                    centerY,
+                    100
+                );
+
+
+            let oreType = null;
+
+
+            // --------------------------
+            // DIAMOND
+            // --------------------------
+
+            if (random < 0.0004) {
+
+                oreType = "diamond";
+
+            }
+
+
+            // --------------------------
+            // GOLD
+            // --------------------------
+
+            else if (random < 0.0015) {
+
+                oreType = "gold";
+
+            }
+
+
+            // --------------------------
+            // IRON
+            // --------------------------
+
+            else if (random < 0.006) {
+
+                oreType = "iron";
+
+            }
+
+
+            // --------------------------
+            // COAL
+            // --------------------------
+
+            else if (random < 0.02) {
+
+                oreType = "coal";
+
+            }
+
+
+            if (!oreType) {
+                continue;
+            }
+
+
+            // De exacte vorm van de groep
+            // wordt ook bepaald door de seed.
+
+            const pattern =
+                worldHash(
+                    centerX,
+                    centerY,
+                    200
+                ) % 4;
+
+
+            // PATTERN 0
+            //
+            // X X
+            // X X
+
+            if (pattern === 0) {
+
+                if (
+                    worldX >= centerX &&
+                    worldX <= centerX + 1 &&
+                    worldY >= centerY &&
+                    worldY <= centerY + 1
+                ) {
+
+                    return oreType;
+
+                }
+
+            }
+
+
+            // PATTERN 1
+            //
+            // X X X X
+
+            if (pattern === 1) {
+
+                if (
+                    worldY === centerY &&
+                    worldX >= centerX &&
+                    worldX <= centerX + 3
+                ) {
+
+                    return oreType;
+
+                }
+
+            }
+
+
+            // PATTERN 2
+            //
+            // X
+            // X
+            // X
+            // X
+
+            if (pattern === 2) {
+
+                if (
+                    worldX === centerX &&
+                    worldY >= centerY &&
+                    worldY <= centerY + 3
+                ) {
+
+                    return oreType;
+
+                }
+
+            }
+
+
+            // PATTERN 3
+            //
+            // X X
+            //   X X
+
+            if (pattern === 3) {
+
+                const positions = [
+
+                    [0, 0],
+                    [1, 0],
+                    [1, 1],
+                    [2, 1]
+
+                ];
+
+
+                for (
+                    const position
+                    of positions
+                ) {
+
+                    if (
+
+                        worldX ===
+                        centerX +
+                        position[0]
+
+                        &&
+
+                        worldY ===
+                        centerY +
+                        position[1]
+
+                    ) {
+
+                        return oreType;
+
+                    }
+
+                }
+
+            }
+
+        }
+
+    }
+
+
+    return null;
+
+}
+
+
+// ==========================================
+// GET TILE
+// ==========================================
+
+function getTile(
+    worldX,
+    worldY,
+    layer
+) {
+
+
+    // ======================================
+    // UNDERGROUND
+    // ======================================
+
+    if (layer === 1) {
+
+
+        const ore =
+            getOreAt(
+                worldX,
+                worldY
+            );
+
+
+        if (ore) {
+
+            return ore;
+
+        }
+
+
+        return "stone";
+
+    }
+
+
+    // ======================================
+    // GROUND
+    // ======================================
+
+    if (layer === 2) {
+
+        return "grass";
+
+    }
+
+
+    // ======================================
+    // BUILD LAYER
+    // ======================================
+
+    if (layer === 3) {
+
+        return getBuildTile(
+            worldX,
+            worldY
+        );
+
+    }
+
+
+    return null;
+
+}
+
+
+// ==========================================
+// IMAGE LOADING
+// ==========================================
+
+const images = {
+
+    grass: new Image(),
+    stone: new Image(),
+
+    coal: new Image(),
+    iron: new Image(),
+    gold: new Image(),
+    diamond: new Image(),
+
+    log: new Image(),
+    leaves: new Image()
+
+};
+
+
+images.grass.src =
+    "assets/tiles/grass.png";
+
+images.stone.src =
+    "assets/tiles/stone.png";
+
+images.coal.src =
+    "assets/tiles/coal_ore.png";
+
+images.iron.src =
+    "assets/tiles/iron_ore.png";
+
+images.gold.src =
+    "assets/tiles/gold_ore.png";
+
+images.diamond.src =
+    "assets/tiles/diamond_ore.png";
+
+images.log.src =
+    "assets/tiles/log.png";
+
+images.leaves.src =
+    "assets/tiles/leaves.png";
+
+
+// ==========================================
+// FALLBACK COLORS
 // ==========================================
 
 function getTileColor(tile) {
@@ -212,10 +545,13 @@ function getTileColor(tile) {
         case "diamond":
             return "#35d6d0";
 
+        case "log":
+            return "#754c24";
+
+        case "leaves":
+            return "#247a32";
+
     }
-
-
-    return null;
 
 }
 
@@ -224,40 +560,56 @@ function getTileColor(tile) {
 // DRAW TILE
 // ==========================================
 
-function drawTile(tile, screenX, screenY) {
+function drawTile(
+    tile,
+    screenX,
+    screenY
+) {
 
     if (!tile) {
         return;
     }
 
 
-    const color = getTileColor(tile);
+    const image =
+        images[tile];
 
-    if (!color) {
-        return;
+
+    // Als het plaatje geladen is:
+    // gebruik het.
+
+    if (
+        image &&
+        image.complete &&
+        image.naturalWidth > 0
+    ) {
+
+        ctx.drawImage(
+            image,
+            screenX,
+            screenY,
+            TILE_SIZE,
+            TILE_SIZE
+        );
+
     }
 
 
-    ctx.fillStyle = color;
+    // Anders gebruiken we tijdelijk kleur.
 
-    ctx.fillRect(
-        screenX,
-        screenY,
-        TILE_SIZE,
-        TILE_SIZE
-    );
+    else {
 
+        ctx.fillStyle =
+            getTileColor(tile);
 
-    // Simple grid border
+        ctx.fillRect(
+            screenX,
+            screenY,
+            TILE_SIZE,
+            TILE_SIZE
+        );
 
-    ctx.strokeStyle = "rgba(0, 0, 0, 0.12)";
-
-    ctx.strokeRect(
-        screenX,
-        screenY,
-        TILE_SIZE,
-        TILE_SIZE
-    );
+    }
 
 }
 
@@ -269,28 +621,33 @@ function drawTile(tile, screenX, screenY) {
 function renderWorld() {
 
 
-    // Amount of visible tiles
-
     const startTileX =
-        Math.floor(camera.x / TILE_SIZE);
+        Math.floor(
+            camera.x / TILE_SIZE
+        ) - 1;
+
 
     const startTileY =
-        Math.floor(camera.y / TILE_SIZE);
+        Math.floor(
+            camera.y / TILE_SIZE
+        ) - 1;
 
 
     const endTileX =
         startTileX +
-        Math.ceil(canvas.width / TILE_SIZE) +
-        2;
+        Math.ceil(
+            canvas.width / TILE_SIZE
+        ) +
+        3;
 
 
     const endTileY =
         startTileY +
-        Math.ceil(canvas.height / TILE_SIZE) +
-        2;
+        Math.ceil(
+            canvas.height / TILE_SIZE
+        ) +
+        3;
 
-
-    // Draw visible tiles only
 
     for (
         let worldY = startTileY;
@@ -305,20 +662,23 @@ function renderWorld() {
         ) {
 
 
-            const tile = getTile(
-                worldX,
-                worldY,
-                currentLayer
-            );
+            const tile =
+                getTile(
+                    worldX,
+                    worldY,
+                    currentLayer
+                );
 
 
             const screenX =
-                worldX * TILE_SIZE -
+                worldX *
+                TILE_SIZE -
                 camera.x;
 
 
             const screenY =
-                worldY * TILE_SIZE -
+                worldY *
+                TILE_SIZE -
                 camera.y;
 
 
@@ -341,38 +701,52 @@ function renderWorld() {
 
 function update(deltaTime) {
 
-
     const movement =
-        camera.speed * deltaTime;
+        camera.speed *
+        deltaTime;
 
 
     if (keys["w"]) {
+
         camera.y -= movement;
+
     }
+
 
     if (keys["s"]) {
+
         camera.y += movement;
+
     }
+
 
     if (keys["a"]) {
+
         camera.x -= movement;
+
     }
 
+
     if (keys["d"]) {
+
         camera.x += movement;
+
     }
 
 }
 
 
 // ==========================================
-// RESIZE CANVAS
+// RESIZE
 // ==========================================
 
 function resizeCanvas() {
 
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
+    canvas.width =
+        window.innerWidth;
+
+    canvas.height =
+        window.innerHeight;
 
 }
 
@@ -391,27 +765,45 @@ resizeCanvas();
 // ==========================================
 
 const layerText =
-    document.getElementById("layerText");
+    document.getElementById(
+        "layerText"
+    );
 
 const chunkText =
-    document.getElementById("chunkText");
+    document.getElementById(
+        "chunkText"
+    );
 
 const cameraText =
-    document.getElementById("cameraText");
+    document.getElementById(
+        "cameraText"
+    );
 
 
 function updateDebug() {
 
 
-    let layerName = "Ground";
+    let layerName =
+        "Ground";
 
 
-    if (currentLayer === 1) {
-        layerName = "Underground";
+    if (
+        currentLayer === 1
+    ) {
+
+        layerName =
+            "Underground";
+
     }
 
-    if (currentLayer === 3) {
-        layerName = "Build";
+
+    if (
+        currentLayer === 3
+    ) {
+
+        layerName =
+            "Build";
+
     }
 
 
@@ -420,24 +812,32 @@ function updateDebug() {
 
 
     const centerX =
-        camera.x + canvas.width / 2;
+        camera.x +
+        canvas.width / 2;
 
 
     const centerY =
-        camera.y + canvas.height / 2;
+        camera.y +
+        canvas.height / 2;
 
 
     const chunkX =
         Math.floor(
             centerX /
-            (TILE_SIZE * CHUNK_SIZE)
+            (
+                TILE_SIZE *
+                CHUNK_SIZE
+            )
         );
 
 
     const chunkY =
         Math.floor(
             centerY /
-            (TILE_SIZE * CHUNK_SIZE)
+            (
+                TILE_SIZE *
+                CHUNK_SIZE
+            )
         );
 
 
@@ -463,17 +863,19 @@ function gameLoop(time) {
 
     const deltaTime =
         Math.min(
-            (time - lastTime) / 1000,
+            (time - lastTime) /
+            1000,
             0.1
         );
 
 
-    lastTime = time;
+    lastTime =
+        time;
 
 
-    // Clear screen
+    ctx.fillStyle =
+        "#000";
 
-    ctx.fillStyle = "#000";
 
     ctx.fillRect(
         0,
@@ -483,17 +885,13 @@ function gameLoop(time) {
     );
 
 
-    // Update
+    update(
+        deltaTime
+    );
 
-    update(deltaTime);
-
-
-    // Render world
 
     renderWorld();
 
-
-    // Update UI
 
     updateDebug();
 
@@ -511,5 +909,5 @@ requestAnimationFrame(
 
 
 console.log(
-    "2D World loaded successfully!"
+    "World loaded!"
 );
