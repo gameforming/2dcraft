@@ -1,17 +1,32 @@
 <!DOCTYPE html>
 <html lang="nl">
+
 <head>
+
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>2D World Game</title>
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
 
-    <link rel="stylesheet" href="style.css">
+    <title>2D World</title>
+
+    <link
+        rel="stylesheet"
+        href="style.css"
+    >
+
 </head>
+
 
 <body>
 
-    <!-- Bovenste menu -->
+
+    <!-- =========================
+         TOP BAR
+    ========================== -->
+
     <div id="topBar">
 
         <div id="gameTitle">
@@ -19,28 +34,223 @@
         </div>
 
         <div id="gameControls">
-            <button id="singleplayerBtn">Singleplayer</button>
-            <button id="multiplayerBtn">Multiplayer</button>
+
+            <button id="singleplayerBtn">
+                Singleplayer
+            </button>
+
+            <button id="multiplayerBtn">
+                Multiplayer
+            </button>
+
         </div>
 
     </div>
 
 
-    <!-- Game -->
+    <!-- =========================
+         GAME
+    ========================== -->
+
     <canvas id="gameCanvas"></canvas>
 
 
-    <!-- Info -->
-    <div id="debug">
-        <div>Layer: <span id="layerText">Ground</span></div>
-        <div>Chunk: <span id="chunkText">0, 0</span></div>
-        <div>Camera: <span id="cameraText">0, 0</span></div>
-        <div>WASD = camera bewegen</div>
-        <div>1 = Underground | 2 = Ground | 3 = Build</div>
+    <!-- =========================
+         HOTBAR
+    ========================== -->
+
+    <div id="hotbar">
+
+        <div class="hotbarSlot selected" data-slot="0">
+            <span class="slotNumber">1</span>
+        </div>
+
+        <div class="hotbarSlot" data-slot="1">
+            <span class="slotNumber">2</span>
+        </div>
+
+        <div class="hotbarSlot" data-slot="2">
+            <span class="slotNumber">3</span>
+        </div>
+
+        <div class="hotbarSlot" data-slot="3">
+            <span class="slotNumber">4</span>
+        </div>
+
+        <div class="hotbarSlot" data-slot="4">
+            <span class="slotNumber">5</span>
+        </div>
+
+        <div class="hotbarSlot" data-slot="5">
+            <span class="slotNumber">6</span>
+        </div>
+
+        <div class="hotbarSlot" data-slot="6">
+            <span class="slotNumber">7</span>
+        </div>
+
+        <div class="hotbarSlot" data-slot="7">
+            <span class="slotNumber">8</span>
+        </div>
+
+        <div class="hotbarSlot" data-slot="8">
+            <span class="slotNumber">9</span>
+        </div>
+
     </div>
 
 
+    <!-- =========================
+         INVENTORY
+    ========================== -->
+
+    <div id="inventoryOverlay">
+
+        <div id="inventory">
+
+            <div id="inventoryHeader">
+                INVENTORY
+                <span>Druk E om te sluiten</span>
+            </div>
+
+
+            <div id="inventoryContent">
+
+
+                <!-- INVENTORY SLOTS -->
+
+                <div id="inventorySlots">
+
+                    <div class="inventoryGrid">
+
+                        <!-- 27 slots -->
+                        <div class="inventorySlot"></div>
+                        <div class="inventorySlot"></div>
+                        <div class="inventorySlot"></div>
+                        <div class="inventorySlot"></div>
+                        <div class="inventorySlot"></div>
+                        <div class="inventorySlot"></div>
+                        <div class="inventorySlot"></div>
+                        <div class="inventorySlot"></div>
+                        <div class="inventorySlot"></div>
+
+                        <div class="inventorySlot"></div>
+                        <div class="inventorySlot"></div>
+                        <div class="inventorySlot"></div>
+                        <div class="inventorySlot"></div>
+                        <div class="inventorySlot"></div>
+                        <div class="inventorySlot"></div>
+                        <div class="inventorySlot"></div>
+                        <div class="inventorySlot"></div>
+                        <div class="inventorySlot"></div>
+
+                        <div class="inventorySlot"></div>
+                        <div class="inventorySlot"></div>
+                        <div class="inventorySlot"></div>
+                        <div class="inventorySlot"></div>
+                        <div class="inventorySlot"></div>
+                        <div class="inventorySlot"></div>
+                        <div class="inventorySlot"></div>
+                        <div class="inventorySlot"></div>
+                        <div class="inventorySlot"></div>
+
+                    </div>
+
+
+                    <!-- HOTBAR INSIDE INVENTORY -->
+
+                    <div
+                        id="inventoryHotbar"
+                        class="inventoryGrid"
+                    >
+
+                        <div class="inventorySlot"></div>
+                        <div class="inventorySlot"></div>
+                        <div class="inventorySlot"></div>
+                        <div class="inventorySlot"></div>
+                        <div class="inventorySlot"></div>
+                        <div class="inventorySlot"></div>
+                        <div class="inventorySlot"></div>
+                        <div class="inventorySlot"></div>
+                        <div class="inventorySlot"></div>
+
+                    </div>
+
+                </div>
+
+
+                <!-- CRAFTING -->
+
+                <div id="crafting">
+
+                    <h3>CRAFTING</h3>
+
+                    <div id="craftingGrid">
+
+                        <div class="craftSlot" data-craft-slot="0"></div>
+                        <div class="craftSlot" data-craft-slot="1"></div>
+                        <div class="craftSlot" data-craft-slot="2"></div>
+
+                        <div class="craftSlot" data-craft-slot="3"></div>
+                        <div class="craftSlot" data-craft-slot="4"></div>
+                        <div class="craftSlot" data-craft-slot="5"></div>
+
+                        <div class="craftSlot" data-craft-slot="6"></div>
+                        <div class="craftSlot" data-craft-slot="7"></div>
+                        <div class="craftSlot" data-craft-slot="8"></div>
+
+                    </div>
+
+                    <div class="craftArrow">
+                        →
+                    </div>
+
+                    <div
+                        id="craftResult"
+                        class="craftSlot"
+                    ></div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- =========================
+         DEBUG
+    ========================== -->
+
+    <div id="debug">
+
+        <div>
+            Layer:
+            <span id="layerText">Ground</span>
+        </div>
+
+        <div>
+            Chunk:
+            <span id="chunkText">0, 0</span>
+        </div>
+
+        <div>
+            Position:
+            <span id="cameraText">0, 0</span>
+        </div>
+
+        <div>
+            Tool:
+            <span id="toolText">Hand</span>
+        </div>
+
+    </div>
+
+
+    <script src="js/loadtools.js"></script>
     <script src="app.js"></script>
 
 </body>
+
 </html>
