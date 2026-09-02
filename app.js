@@ -1,12 +1,13 @@
 console.log("Starting 2D World...");
 
-
 // ==========================================
 // CANVAS
 // ==========================================
 
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
+
+ctx.imageSmoothingEnabled = false;
 
 
 // ==========================================
@@ -20,13 +21,27 @@ const WORLD_SEED = 123456;
 
 
 // ==========================================
+// PLAYER
+// ==========================================
+
+const player = {
+    x: 0,
+    y: 0,
+
+    width: 28,
+    height: 28,
+
+    speed: 180
+};
+
+
+// ==========================================
 // CAMERA
 // ==========================================
 
 const camera = {
     x: 0,
-    y: 0,
-    speed: 500
+    y: 0
 };
 
 
@@ -48,7 +63,6 @@ window.addEventListener("keydown", (event) => {
     const key = event.key.toLowerCase();
 
     keys[key] = true;
-
 
     if (event.key === "1") {
         currentLayer = 1;
@@ -87,16 +101,12 @@ function seededRandom(x, y, extra = 0) {
     value = Math.sin(value) * 43758.5453;
 
     return value - Math.floor(value);
-
 }
 
 
 // ==========================================
 // WORLD HASH
 // ==========================================
-
-// Geeft een vaste unieke waarde voor een positie.
-// Zelfde positie + zelfde seed = altijd hetzelfde.
 
 function worldHash(x, y, extra = 0) {
 
@@ -107,58 +117,53 @@ function worldHash(x, y, extra = 0) {
         extra * 2654435761;
 
     return Math.abs(value);
-
 }
 
 
 // ==========================================
-// TREE GENERATION
+// TREE CENTER
 // ==========================================
 
 function isTreeCenter(x, y) {
 
-    const random = seededRandom(x, y, 50);
+    const random =
+        seededRandom(x, y, 50);
 
-    // Kans op een boom
     return random < 0.008;
-
 }
 
 
 // ==========================================
-// GET BUILD TILE
+// BUILD LAYER
 // ==========================================
 
 function getBuildTile(worldX, worldY) {
 
-
     // --------------------------------------
-    // CHECK EIGEN POSITIE
+    // TREE LOG
     // --------------------------------------
-
-    // Als hier een boomcentrum is,
-    // staat hier de log.
 
     if (isTreeCenter(worldX, worldY)) {
-
         return "log";
-
     }
 
 
     // --------------------------------------
-    // CHECK NABURIGE POSITIES
+    // TREE LEAVES
     // --------------------------------------
 
-    // Een boom heeft 1 log in het midden
-    // en leaves rondom de log.
+    for (
+        let offsetY = -1;
+        offsetY <= 1;
+        offsetY++
+    ) {
 
-    for (let offsetY = -1; offsetY <= 1; offsetY++) {
+        for (
+            let offsetX = -1;
+            offsetX <= 1;
+            offsetX++
+        ) {
 
-        for (let offsetX = -1; offsetX <= 1; offsetX++) {
-
-
-            // Midden overslaan
             if (
                 offsetX === 0 &&
                 offsetY === 0
@@ -191,21 +196,14 @@ function getBuildTile(worldX, worldY) {
 
 
     return null;
-
 }
 
 
 // ==========================================
-// ORE GENERATION
+// ORES
 // ==========================================
 
-// Een ore groep heeft maximaal 4 blocks.
-
 function getOreAt(worldX, worldY) {
-
-
-    // We kijken naar mogelijke
-    // ore-cluster centers in de buurt.
 
     for (
         let centerY = worldY - 2;
@@ -219,7 +217,6 @@ function getOreAt(worldX, worldY) {
             centerX++
         ) {
 
-
             const random =
                 seededRandom(
                     centerX,
@@ -231,43 +228,21 @@ function getOreAt(worldX, worldY) {
             let oreType = null;
 
 
-            // --------------------------
-            // DIAMOND
-            // --------------------------
-
             if (random < 0.0004) {
 
                 oreType = "diamond";
 
             }
-
-
-            // --------------------------
-            // GOLD
-            // --------------------------
-
             else if (random < 0.0015) {
 
                 oreType = "gold";
 
             }
-
-
-            // --------------------------
-            // IRON
-            // --------------------------
-
             else if (random < 0.006) {
 
                 oreType = "iron";
 
             }
-
-
-            // --------------------------
-            // COAL
-            // --------------------------
-
             else if (random < 0.02) {
 
                 oreType = "coal";
@@ -280,9 +255,6 @@ function getOreAt(worldX, worldY) {
             }
 
 
-            // De exacte vorm van de groep
-            // wordt ook bepaald door de seed.
-
             const pattern =
                 worldHash(
                     centerX,
@@ -291,10 +263,7 @@ function getOreAt(worldX, worldY) {
                 ) % 4;
 
 
-            // PATTERN 0
-            //
-            // X X
-            // X X
+            // 2x2
 
             if (pattern === 0) {
 
@@ -312,9 +281,7 @@ function getOreAt(worldX, worldY) {
             }
 
 
-            // PATTERN 1
-            //
-            // X X X X
+            // Horizontal 4
 
             if (pattern === 1) {
 
@@ -331,12 +298,7 @@ function getOreAt(worldX, worldY) {
             }
 
 
-            // PATTERN 2
-            //
-            // X
-            // X
-            // X
-            // X
+            // Vertical 4
 
             if (pattern === 2) {
 
@@ -353,40 +315,28 @@ function getOreAt(worldX, worldY) {
             }
 
 
-            // PATTERN 3
-            //
-            // X X
-            //   X X
+            // Diagonal 4
 
             if (pattern === 3) {
 
                 const positions = [
-
                     [0, 0],
                     [1, 0],
                     [1, 1],
                     [2, 1]
-
                 ];
 
 
                 for (
-                    const position
-                    of positions
+                    const position of positions
                 ) {
 
                     if (
-
                         worldX ===
-                        centerX +
-                        position[0]
-
-                        &&
+                        centerX + position[0] &&
 
                         worldY ===
-                        centerY +
-                        position[1]
-
+                        centerY + position[1]
                     ) {
 
                         return oreType;
@@ -403,7 +353,6 @@ function getOreAt(worldX, worldY) {
 
 
     return null;
-
 }
 
 
@@ -417,13 +366,9 @@ function getTile(
     layer
 ) {
 
-
-    // ======================================
-    // UNDERGROUND
-    // ======================================
+    // Underground
 
     if (layer === 1) {
-
 
         const ore =
             getOreAt(
@@ -431,33 +376,23 @@ function getTile(
                 worldY
             );
 
-
         if (ore) {
-
             return ore;
-
         }
 
-
         return "stone";
-
     }
 
 
-    // ======================================
-    // GROUND
-    // ======================================
+    // Ground
 
     if (layer === 2) {
 
         return "grass";
-
     }
 
 
-    // ======================================
-    // BUILD LAYER
-    // ======================================
+    // Build
 
     if (layer === 3) {
 
@@ -465,17 +400,15 @@ function getTile(
             worldX,
             worldY
         );
-
     }
 
 
     return null;
-
 }
 
 
 // ==========================================
-// IMAGE LOADING
+// IMAGES
 // ==========================================
 
 const images = {
@@ -489,7 +422,9 @@ const images = {
     diamond: new Image(),
 
     log: new Image(),
-    leaves: new Image()
+    leaves: new Image(),
+
+    player: new Image()
 
 };
 
@@ -517,6 +452,9 @@ images.log.src =
 
 images.leaves.src =
     "assets/tiles/leaves.png";
+
+images.player.src =
+    "assets/player/player.png";
 
 
 // ==========================================
@@ -553,6 +491,7 @@ function getTileColor(tile) {
 
     }
 
+    return "#000";
 }
 
 
@@ -575,9 +514,6 @@ function drawTile(
         images[tile];
 
 
-    // Als het plaatje geladen is:
-    // gebruik het.
-
     if (
         image &&
         image.complete &&
@@ -593,10 +529,6 @@ function drawTile(
         );
 
     }
-
-
-    // Anders gebruiken we tijdelijk kleur.
-
     else {
 
         ctx.fillStyle =
@@ -615,11 +547,222 @@ function drawTile(
 
 
 // ==========================================
-// RENDER WORLD
+// COLLISION TILE
 // ==========================================
 
-function renderWorld() {
+function isSolidBuildTile(
+    worldX,
+    worldY
+) {
 
+    const tile =
+        getBuildTile(
+            worldX,
+            worldY
+        );
+
+    return (
+        tile === "log" ||
+        tile === "leaves"
+    );
+}
+
+
+// ==========================================
+// PLAYER COLLISION
+// ==========================================
+
+function canPlayerMoveTo(
+    newX,
+    newY
+) {
+
+    const halfWidth =
+        player.width / 2;
+
+    const halfHeight =
+        player.height / 2;
+
+
+    const left =
+        newX - halfWidth;
+
+    const right =
+        newX + halfWidth;
+
+    const top =
+        newY - halfHeight;
+
+    const bottom =
+        newY + halfHeight;
+
+
+    const tileLeft =
+        Math.floor(
+            left / TILE_SIZE
+        );
+
+    const tileRight =
+        Math.floor(
+            right / TILE_SIZE
+        );
+
+    const tileTop =
+        Math.floor(
+            top / TILE_SIZE
+        );
+
+    const tileBottom =
+        Math.floor(
+            bottom / TILE_SIZE
+        );
+
+
+    for (
+        let y = tileTop;
+        y <= tileBottom;
+        y++
+    ) {
+
+        for (
+            let x = tileLeft;
+            x <= tileRight;
+            x++
+        ) {
+
+            if (
+                isSolidBuildTile(
+                    x,
+                    y
+                )
+            ) {
+
+                return false;
+
+            }
+
+        }
+
+    }
+
+
+    return true;
+}
+
+
+// ==========================================
+// MOVE PLAYER
+// ==========================================
+
+function updatePlayer(deltaTime) {
+
+    let dx = 0;
+    let dy = 0;
+
+
+    if (keys["w"]) {
+        dy -= 1;
+    }
+
+    if (keys["s"]) {
+        dy += 1;
+    }
+
+    if (keys["a"]) {
+        dx -= 1;
+    }
+
+    if (keys["d"]) {
+        dx += 1;
+    }
+
+
+    // Normalize diagonal movement
+
+    if (
+        dx !== 0 &&
+        dy !== 0
+    ) {
+
+        const length =
+            Math.sqrt(
+                dx * dx +
+                dy * dy
+            );
+
+        dx /= length;
+        dy /= length;
+
+    }
+
+
+    const movement =
+        player.speed *
+        deltaTime;
+
+
+    // X movement
+
+    const newX =
+        player.x +
+        dx * movement;
+
+
+    if (
+        canPlayerMoveTo(
+            newX,
+            player.y
+        )
+    ) {
+
+        player.x = newX;
+
+    }
+
+
+    // Y movement
+
+    const newY =
+        player.y +
+        dy * movement;
+
+
+    if (
+        canPlayerMoveTo(
+            player.x,
+            newY
+        )
+    ) {
+
+        player.y = newY;
+
+    }
+
+}
+
+
+// ==========================================
+// UPDATE CAMERA
+// ==========================================
+
+function updateCamera() {
+
+    camera.x =
+        player.x -
+        canvas.width / 2;
+
+    camera.y =
+        player.y -
+        canvas.height / 2;
+
+}
+
+
+// ==========================================
+// RENDER GROUND
+// ==========================================
+
+function renderGround() {
 
     const startTileX =
         Math.floor(
@@ -661,12 +804,11 @@ function renderWorld() {
             worldX++
         ) {
 
-
             const tile =
                 getTile(
                     worldX,
                     worldY,
-                    currentLayer
+                    2
                 );
 
 
@@ -696,40 +838,82 @@ function renderWorld() {
 
 
 // ==========================================
-// UPDATE CAMERA
+// RENDER BUILD LAYER
 // ==========================================
 
-function update(deltaTime) {
+function renderBuildLayer() {
 
-    const movement =
-        camera.speed *
-        deltaTime;
-
-
-    if (keys["w"]) {
-
-        camera.y -= movement;
-
-    }
+    const startTileX =
+        Math.floor(
+            camera.x / TILE_SIZE
+        ) - 1;
 
 
-    if (keys["s"]) {
-
-        camera.y += movement;
-
-    }
-
-
-    if (keys["a"]) {
-
-        camera.x -= movement;
-
-    }
+    const startTileY =
+        Math.floor(
+            camera.y / TILE_SIZE
+        ) - 1;
 
 
-    if (keys["d"]) {
+    const endTileX =
+        startTileX +
+        Math.ceil(
+            canvas.width / TILE_SIZE
+        ) +
+        3;
 
-        camera.x += movement;
+
+    const endTileY =
+        startTileY +
+        Math.ceil(
+            canvas.height / TILE_SIZE
+        ) +
+        3;
+
+
+    for (
+        let worldY = startTileY;
+        worldY < endTileY;
+        worldY++
+    ) {
+
+        for (
+            let worldX = startTileX;
+            worldX < endTileX;
+            worldX++
+        ) {
+
+            const tile =
+                getBuildTile(
+                    worldX,
+                    worldY
+                );
+
+
+            if (!tile) {
+                continue;
+            }
+
+
+            const screenX =
+                worldX *
+                TILE_SIZE -
+                camera.x;
+
+
+            const screenY =
+                worldY *
+                TILE_SIZE -
+                camera.y;
+
+
+            drawTile(
+                tile,
+                Math.floor(screenX),
+                Math.floor(screenY)
+            );
+
+        }
 
     }
 
@@ -737,27 +921,186 @@ function update(deltaTime) {
 
 
 // ==========================================
-// RESIZE
+// RENDER UNDERGROUND
 // ==========================================
 
-function resizeCanvas() {
+function renderUnderground() {
 
-    canvas.width =
-        window.innerWidth;
+    const startTileX =
+        Math.floor(
+            camera.x / TILE_SIZE
+        ) - 1;
 
-    canvas.height =
-        window.innerHeight;
+
+    const startTileY =
+        Math.floor(
+            camera.y / TILE_SIZE
+        ) - 1;
+
+
+    const endTileX =
+        startTileX +
+        Math.ceil(
+            canvas.width / TILE_SIZE
+        ) +
+        3;
+
+
+    const endTileY =
+        startTileY +
+        Math.ceil(
+            canvas.height / TILE_SIZE
+        ) +
+        3;
+
+
+    for (
+        let worldY = startTileY;
+        worldY < endTileY;
+        worldY++
+    ) {
+
+        for (
+            let worldX = startTileX;
+            worldX < endTileX;
+            worldX++
+        ) {
+
+            const tile =
+                getTile(
+                    worldX,
+                    worldY,
+                    1
+                );
+
+
+            const screenX =
+                worldX *
+                TILE_SIZE -
+                camera.x;
+
+
+            const screenY =
+                worldY *
+                TILE_SIZE -
+                camera.y;
+
+
+            drawTile(
+                tile,
+                Math.floor(screenX),
+                Math.floor(screenY)
+            );
+
+        }
+
+    }
 
 }
 
 
-window.addEventListener(
-    "resize",
-    resizeCanvas
-);
+// ==========================================
+// RENDER PLAYER
+// ==========================================
+
+function renderPlayer() {
+
+    const screenX =
+        player.x -
+        camera.x -
+        player.width / 2;
 
 
-resizeCanvas();
+    const screenY =
+        player.y -
+        camera.y -
+        player.height / 2;
+
+
+    if (
+        images.player.complete &&
+        images.player.naturalWidth > 0
+    ) {
+
+        ctx.drawImage(
+            images.player,
+            Math.floor(screenX),
+            Math.floor(screenY),
+            player.width,
+            player.height
+        );
+
+    }
+    else {
+
+        // Tijdelijke smiley fallback
+
+        ctx.fillStyle = "#ffd83d";
+
+        ctx.fillRect(
+            screenX,
+            screenY,
+            player.width,
+            player.height
+        );
+
+
+        ctx.fillStyle = "#111";
+
+        ctx.fillRect(
+            screenX + 7,
+            screenY + 7,
+            3,
+            3
+        );
+
+        ctx.fillRect(
+            screenX + 18,
+            screenY + 7,
+            3,
+            3
+        );
+
+    }
+
+}
+
+
+// ==========================================
+// RENDER
+// ==========================================
+
+function renderWorld() {
+
+    ctx.fillStyle = "#000";
+
+    ctx.fillRect(
+        0,
+        0,
+        canvas.width,
+        canvas.height
+    );
+
+
+    if (currentLayer === 1) {
+
+        renderUnderground();
+
+    }
+    else {
+
+        renderGround();
+
+        // Build layer ligt bovenop ground
+
+        renderBuildLayer();
+
+    }
+
+
+    renderPlayer();
+
+}
 
 
 // ==========================================
@@ -782,28 +1125,15 @@ const cameraText =
 
 function updateDebug() {
 
-
-    let layerName =
-        "Ground";
+    let layerName = "Ground";
 
 
-    if (
-        currentLayer === 1
-    ) {
-
-        layerName =
-            "Underground";
-
+    if (currentLayer === 1) {
+        layerName = "Underground";
     }
 
-
-    if (
-        currentLayer === 3
-    ) {
-
-        layerName =
-            "Build";
-
+    if (currentLayer === 3) {
+        layerName = "Build";
     }
 
 
@@ -811,19 +1141,9 @@ function updateDebug() {
         layerName;
 
 
-    const centerX =
-        camera.x +
-        canvas.width / 2;
-
-
-    const centerY =
-        camera.y +
-        canvas.height / 2;
-
-
     const chunkX =
         Math.floor(
-            centerX /
+            player.x /
             (
                 TILE_SIZE *
                 CHUNK_SIZE
@@ -833,7 +1153,7 @@ function updateDebug() {
 
     const chunkY =
         Math.floor(
-            centerY /
+            player.y /
             (
                 TILE_SIZE *
                 CHUNK_SIZE
@@ -846,9 +1166,35 @@ function updateDebug() {
 
 
     cameraText.textContent =
-        `${Math.floor(camera.x)}, ${Math.floor(camera.y)}`;
+        `${Math.floor(player.x)}, ${Math.floor(player.y)}`;
 
 }
+
+
+// ==========================================
+// RESIZE
+// ==========================================
+
+function resizeCanvas() {
+
+    canvas.width =
+        window.innerWidth;
+
+    canvas.height =
+        window.innerHeight;
+
+    ctx.imageSmoothingEnabled = false;
+
+}
+
+
+window.addEventListener(
+    "resize",
+    resizeCanvas
+);
+
+
+resizeCanvas();
 
 
 // ==========================================
@@ -860,34 +1206,22 @@ let lastTime = 0;
 
 function gameLoop(time) {
 
-
     const deltaTime =
         Math.min(
-            (time - lastTime) /
-            1000,
+            (time - lastTime) / 1000,
             0.1
         );
 
 
-    lastTime =
-        time;
+    lastTime = time;
 
 
-    ctx.fillStyle =
-        "#000";
-
-
-    ctx.fillRect(
-        0,
-        0,
-        canvas.width,
-        canvas.height
-    );
-
-
-    update(
+    updatePlayer(
         deltaTime
     );
+
+
+    updateCamera();
 
 
     renderWorld();
@@ -909,5 +1243,5 @@ requestAnimationFrame(
 
 
 console.log(
-    "World loaded!"
+    "World + player loaded successfully!"
 );
