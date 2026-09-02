@@ -547,8 +547,16 @@ const BLOCKS = {
     leaves: {
         hardness: 1,
         drop: null
-    }
+    },
+    planks: {
+        hardness: 5,
+        drop: "planks"
+    },
 
+        stick: {
+            hardness: 1,
+            drop: "stick"
+    },
 };
 
 
@@ -618,7 +626,108 @@ const TOOLS = {
 // ==========================================
 // INVENTORY
 // ==========================================
+let draggedItem = null;
+let draggedFromSlot = null;
 
+function setupInventoryMovement() {
+
+    const slots = document.querySelectorAll(
+        "#inventorySlots .inventorySlot"
+    );
+
+    slots.forEach(
+        (element, index) => {
+
+            element.addEventListener(
+                "mousedown",
+                event => {
+
+                    if (!inventoryOpen) {
+                        return;
+                    }
+
+                    const item =
+                        inventory.slots[index];
+
+                    if (!item) {
+                        return;
+                    }
+
+                    draggedItem =
+                        item;
+
+                    draggedFromSlot =
+                        index;
+
+                    event.preventDefault();
+
+                }
+            );
+
+
+            element.addEventListener(
+                "mouseup",
+                event => {
+
+                    if (
+                        draggedFromSlot === null
+                    ) {
+                        return;
+                    }
+
+                    const targetItem =
+                        inventory.slots[index];
+
+
+                    // Zelfde item:
+                    // stack samen
+
+                    if (
+                        targetItem &&
+                        targetItem.id ===
+                        draggedItem.id
+                    ) {
+
+                        targetItem.amount +=
+                            draggedItem.amount;
+
+                        inventory.slots[
+                            draggedFromSlot
+                        ] = null;
+
+                    }
+
+                    else {
+
+                        const old =
+                            inventory.slots[index];
+
+
+                        inventory.slots[index] =
+                            draggedItem;
+
+
+                        inventory.slots[
+                            draggedFromSlot
+                        ] = old;
+
+                    }
+
+
+                    draggedItem = null;
+
+                    draggedFromSlot = null;
+
+
+                    renderInventoryUI();
+
+                }
+            );
+
+        }
+    );
+
+}
 const inventory = {
 
     slots: Array(36).fill(null),
@@ -1084,16 +1193,14 @@ function isSolidBuildTile(
 ) {
 
     const tile =
-        getBuildTile(
+        getActualTile(
             x,
-            y
+            y,
+            3
         );
 
 
-    return (
-        tile === "log" ||
-        tile === "leaves"
-    );
+    return tile !== null;
 
 }
 
@@ -2795,7 +2902,7 @@ resizeCanvas();
 
 let lastTime = 0;
 
-
+setupInventoryMovement();
 function gameLoop(time) {
 
     const deltaTime =
