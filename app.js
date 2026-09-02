@@ -2611,9 +2611,7 @@ document.addEventListener(
 
 function renderWorld() {
 
-    ctx.fillStyle =
-        "#000";
-
+    ctx.fillStyle = "#000";
 
     ctx.fillRect(
         0,
@@ -2623,16 +2621,21 @@ function renderWorld() {
     );
 
 
-    if (
-        currentLayer === 1
-    ) {
+    // Ondergrond altijd tekenen
+    renderUnderground();
 
-        renderUnderground();
 
-    }
-    else {
+    // Grond tekenen als we op laag 2 of hoger zitten
+    if (currentLayer >= 2) {
 
         renderGround();
+
+    }
+
+
+    // Bouwlaag tekenen als we op laag 3 zitten
+    // of als de bouwlaag zichtbaar is vanaf laag 2
+    if (currentLayer >= 2) {
 
         renderBuild();
 
