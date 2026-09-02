@@ -1,17 +1,21 @@
 console.log("Starting 2D World...");
 
+
 // ==========================================
 // CANVAS
 // ==========================================
 
-const canvas = document.getElementById("gameCanvas");
-const ctx = canvas.getContext("2d");
+const canvas =
+    document.getElementById("gameCanvas");
+
+const ctx =
+    canvas.getContext("2d");
 
 ctx.imageSmoothingEnabled = false;
 
 
 // ==========================================
-// SETTINGS
+// WORLD SETTINGS
 // ==========================================
 
 const TILE_SIZE = 32;
@@ -25,6 +29,7 @@ const WORLD_SEED = 123456;
 // ==========================================
 
 const player = {
+
     x: 0,
     y: 0,
 
@@ -32,6 +37,7 @@ const player = {
     height: 28,
 
     speed: 180
+
 };
 
 
@@ -46,51 +52,144 @@ const camera = {
 
 
 // ==========================================
-// ACTIVE LAYER
-// ==========================================
-
-let currentLayer = 2;
-
-
-// ==========================================
 // INPUT
 // ==========================================
 
 const keys = {};
 
-window.addEventListener("keydown", (event) => {
+const mouse = {
+    x: 0,
+    y: 0,
 
-    const key = event.key.toLowerCase();
+    left: false,
+    right: false
+};
 
-    keys[key] = true;
 
-    if (event.key === "1") {
-        currentLayer = 1;
+window.addEventListener(
+    "keydown",
+    event => {
+
+        const key =
+            event.key.toLowerCase();
+
+        keys[key] = true;
+
+
+        // Inventory
+
+        if (
+            key === "e" &&
+            !event.repeat
+        ) {
+
+            toggleInventory();
+
+        }
+
+
+        // Hotbar 1-9
+
+        if (
+            key >= "1" &&
+            key <= "9"
+        ) {
+
+            const slot =
+                Number(key) - 1;
+
+            selectHotbarSlot(slot);
+
+        }
+
     }
+);
 
-    if (event.key === "2") {
-        currentLayer = 2;
+
+window.addEventListener(
+    "keyup",
+    event => {
+
+        keys[
+            event.key.toLowerCase()
+        ] = false;
+
     }
+);
 
-    if (event.key === "3") {
-        currentLayer = 3;
+
+canvas.addEventListener(
+    "mousemove",
+    event => {
+
+        const rect =
+            canvas.getBoundingClientRect();
+
+        mouse.x =
+            event.clientX -
+            rect.left;
+
+        mouse.y =
+            event.clientY -
+            rect.top;
+
     }
+);
 
-});
+
+canvas.addEventListener(
+    "mousedown",
+    event => {
+
+        if (event.button === 0) {
+            mouse.left = true;
+        }
+
+        if (event.button === 2) {
+            mouse.right = true;
+        }
+
+    }
+);
 
 
-window.addEventListener("keyup", (event) => {
+window.addEventListener(
+    "mouseup",
+    event => {
 
-    keys[event.key.toLowerCase()] = false;
+        if (event.button === 0) {
+            mouse.left = false;
+        }
 
-});
+        if (event.button === 2) {
+            mouse.right = false;
+        }
+
+    }
+);
+
+
+// Voorkom rechtermuisknop-menu
+
+canvas.addEventListener(
+    "contextmenu",
+    event => {
+
+        event.preventDefault();
+
+    }
+);
 
 
 // ==========================================
 // SEEDED RANDOM
 // ==========================================
 
-function seededRandom(x, y, extra = 0) {
+function seededRandom(
+    x,
+    y,
+    extra = 0
+) {
 
     let value =
         x * 374761393 +
@@ -98,9 +197,17 @@ function seededRandom(x, y, extra = 0) {
         WORLD_SEED * 982451653 +
         extra * 12345;
 
-    value = Math.sin(value) * 43758.5453;
 
-    return value - Math.floor(value);
+    value =
+        Math.sin(value) *
+        43758.5453;
+
+
+    return (
+        value -
+        Math.floor(value)
+    );
+
 }
 
 
@@ -108,7 +215,11 @@ function seededRandom(x, y, extra = 0) {
 // WORLD HASH
 // ==========================================
 
-function worldHash(x, y, extra = 0) {
+function worldHash(
+    x,
+    y,
+    extra = 0
+) {
 
     const value =
         x * 73856093 ^
@@ -116,41 +227,52 @@ function worldHash(x, y, extra = 0) {
         WORLD_SEED * 83492791 ^
         extra * 2654435761;
 
+
     return Math.abs(value);
+
 }
 
 
 // ==========================================
-// TREE CENTER
+// TREES
 // ==========================================
 
-function isTreeCenter(x, y) {
+function isTreeCenter(
+    x,
+    y
+) {
 
-    const random =
-        seededRandom(x, y, 50);
+    return (
+        seededRandom(
+            x,
+            y,
+            50
+        ) < 0.008
+    );
 
-    return random < 0.008;
 }
 
 
-// ==========================================
-// BUILD LAYER
-// ==========================================
+function getBuildTile(
+    worldX,
+    worldY
+) {
 
-function getBuildTile(worldX, worldY) {
+    // LOG
 
-    // --------------------------------------
-    // TREE LOG
-    // --------------------------------------
+    if (
+        isTreeCenter(
+            worldX,
+            worldY
+        )
+    ) {
 
-    if (isTreeCenter(worldX, worldY)) {
         return "log";
+
     }
 
 
-    // --------------------------------------
-    // TREE LEAVES
-    // --------------------------------------
+    // LEAVES
 
     for (
         let offsetY = -1;
@@ -168,15 +290,20 @@ function getBuildTile(worldX, worldY) {
                 offsetX === 0 &&
                 offsetY === 0
             ) {
+
                 continue;
+
             }
 
 
             const treeX =
-                worldX - offsetX;
+                worldX -
+                offsetX;
+
 
             const treeY =
-                worldY - offsetY;
+                worldY -
+                offsetY;
 
 
             if (
@@ -196,6 +323,7 @@ function getBuildTile(worldX, worldY) {
 
 
     return null;
+
 }
 
 
@@ -203,17 +331,28 @@ function getBuildTile(worldX, worldY) {
 // ORES
 // ==========================================
 
-function getOreAt(worldX, worldY) {
+function getOreAt(
+    worldX,
+    worldY
+) {
 
     for (
-        let centerY = worldY - 2;
-        centerY <= worldY + 2;
+        let centerY =
+            worldY - 2;
+
+        centerY <=
+            worldY + 2;
+
         centerY++
     ) {
 
         for (
-            let centerX = worldX - 2;
-            centerX <= worldX + 2;
+            let centerX =
+                worldX - 2;
+
+            centerX <=
+                worldX + 2;
+
             centerX++
         ) {
 
@@ -228,24 +367,36 @@ function getOreAt(worldX, worldY) {
             let oreType = null;
 
 
-            if (random < 0.0004) {
+            if (
+                random < 0.0004
+            ) {
 
-                oreType = "diamond";
-
-            }
-            else if (random < 0.0015) {
-
-                oreType = "gold";
+                oreType =
+                    "diamond";
 
             }
-            else if (random < 0.006) {
+            else if (
+                random < 0.0015
+            ) {
 
-                oreType = "iron";
+                oreType =
+                    "gold";
 
             }
-            else if (random < 0.02) {
+            else if (
+                random < 0.006
+            ) {
 
-                oreType = "coal";
+                oreType =
+                    "iron";
+
+            }
+            else if (
+                random < 0.02
+            ) {
+
+                oreType =
+                    "coal";
 
             }
 
@@ -263,80 +414,70 @@ function getOreAt(worldX, worldY) {
                 ) % 4;
 
 
-            // 2x2
+            if (
+                pattern === 0 &&
+                worldX >= centerX &&
+                worldX <= centerX + 1 &&
+                worldY >= centerY &&
+                worldY <= centerY + 1
+            ) {
 
-            if (pattern === 0) {
-
-                if (
-                    worldX >= centerX &&
-                    worldX <= centerX + 1 &&
-                    worldY >= centerY &&
-                    worldY <= centerY + 1
-                ) {
-
-                    return oreType;
-
-                }
+                return oreType;
 
             }
 
 
-            // Horizontal 4
+            if (
+                pattern === 1 &&
+                worldY === centerY &&
+                worldX >= centerX &&
+                worldX <= centerX + 3
+            ) {
 
-            if (pattern === 1) {
-
-                if (
-                    worldY === centerY &&
-                    worldX >= centerX &&
-                    worldX <= centerX + 3
-                ) {
-
-                    return oreType;
-
-                }
+                return oreType;
 
             }
 
 
-            // Vertical 4
+            if (
+                pattern === 2 &&
+                worldX === centerX &&
+                worldY >= centerY &&
+                worldY <= centerY + 3
+            ) {
 
-            if (pattern === 2) {
-
-                if (
-                    worldX === centerX &&
-                    worldY >= centerY &&
-                    worldY <= centerY + 3
-                ) {
-
-                    return oreType;
-
-                }
+                return oreType;
 
             }
 
 
-            // Diagonal 4
-
-            if (pattern === 3) {
+            if (
+                pattern === 3
+            ) {
 
                 const positions = [
+
                     [0, 0],
                     [1, 0],
                     [1, 1],
                     [2, 1]
+
                 ];
 
 
                 for (
-                    const position of positions
+                    const position
+                    of positions
                 ) {
 
                     if (
                         worldX ===
-                        centerX + position[0] &&
+                        centerX +
+                        position[0] &&
 
                         worldY ===
-                        centerY + position[1]
+                        centerY +
+                        position[1]
                     ) {
 
                         return oreType;
@@ -353,11 +494,358 @@ function getOreAt(worldX, worldY) {
 
 
     return null;
+
 }
 
 
 // ==========================================
-// GET TILE
+// TILE DATA
+// ==========================================
+
+const BLOCKS = {
+
+    grass: {
+        hardness: 5,
+        drop: "grass"
+    },
+
+    stone: {
+        hardness: 5,
+        drop: "stone"
+    },
+
+    coal: {
+        hardness: 5,
+        drop: "coal"
+    },
+
+    iron: {
+        hardness: 5,
+        drop: "iron"
+    },
+
+    gold: {
+        hardness: 7,
+        drop: "gold"
+    },
+
+    diamond: {
+        hardness: 10,
+        drop: "diamond"
+    },
+
+    log: {
+        hardness: 5,
+        drop: "log"
+    },
+
+    leaves: {
+        hardness: 1,
+        drop: null
+    }
+
+};
+
+
+// ==========================================
+// TOOLS
+// ==========================================
+
+const TOOLS = {
+
+    hand: {
+
+        name: "Hand",
+
+        level: 0,
+
+        speed: 1
+
+    },
+
+
+    wooden_pickaxe: {
+
+        name: "Wooden Pickaxe",
+
+        level: 1,
+
+        speed: 2
+
+    },
+
+
+    stone_pickaxe: {
+
+        name: "Stone Pickaxe",
+
+        level: 2,
+
+        speed: 3
+
+    },
+
+
+    iron_pickaxe: {
+
+        name: "Iron Pickaxe",
+
+        level: 3,
+
+        speed: 4
+
+    },
+
+
+    diamond_pickaxe: {
+
+        name: "Diamond Pickaxe",
+
+        level: 4,
+
+        speed: 6
+
+    }
+
+};
+
+
+// ==========================================
+// INVENTORY
+// ==========================================
+
+const inventory = {
+
+    slots: Array(36).fill(null),
+
+    selectedHotbar: 0
+
+};
+
+
+// Give player starter wood
+
+inventory.slots[0] = {
+
+    id: "log",
+    amount: 10
+
+};
+
+
+// ==========================================
+// CRAFTING RECIPES
+// ==========================================
+
+const RECIPES = [
+
+    {
+
+        id: "wooden_pickaxe",
+
+        output: 1,
+
+        ingredients: {
+
+            log: 3
+
+        }
+
+    },
+
+    {
+
+        id: "stone_pickaxe",
+
+        output: 1,
+
+        ingredients: {
+
+            stone: 3
+
+        }
+
+    },
+
+    {
+
+        id: "iron_pickaxe",
+
+        output: 1,
+
+        ingredients: {
+
+            iron: 3
+
+        }
+
+    },
+
+    {
+
+        id: "diamond_pickaxe",
+
+        output: 1,
+
+        ingredients: {
+
+            diamond: 3
+
+        }
+
+    }
+
+];
+
+
+// ==========================================
+// INVENTORY UI
+// ==========================================
+
+let inventoryOpen = false;
+
+
+function toggleInventory() {
+
+    inventoryOpen =
+        !inventoryOpen;
+
+
+    const overlay =
+        document.getElementById(
+            "inventoryOverlay"
+        );
+
+
+    overlay.classList.toggle(
+        "open",
+        inventoryOpen
+    );
+
+
+    if (inventoryOpen) {
+
+        mouse.left = false;
+        mouse.right = false;
+
+    }
+
+}
+
+
+function selectHotbarSlot(slot) {
+
+    if (
+        slot < 0 ||
+        slot > 8
+    ) {
+
+        return;
+
+    }
+
+
+    inventory.selectedHotbar =
+        slot;
+
+
+    document
+        .querySelectorAll(
+            ".hotbarSlot"
+        )
+        .forEach(
+            element => {
+
+                element.classList.remove(
+                    "selected"
+                );
+
+            }
+        );
+
+
+    const selected =
+        document.querySelector(
+            `.hotbarSlot[data-slot="${slot}"]`
+        );
+
+
+    if (selected) {
+
+        selected.classList.add(
+            "selected"
+        );
+
+    }
+
+
+    updateToolDebug();
+
+}
+
+
+// ==========================================
+// CURRENT ITEM
+// ==========================================
+
+function getSelectedItem() {
+
+    return inventory.slots[
+        inventory.selectedHotbar
+    ];
+
+}
+
+
+// ==========================================
+// CURRENT TOOL
+// ==========================================
+
+function getCurrentTool() {
+
+    const item =
+        getSelectedItem();
+
+
+    if (
+        !item ||
+        !TOOLS[item.id]
+    ) {
+
+        return TOOLS.hand;
+
+    }
+
+
+    return TOOLS[item.id];
+
+}
+
+
+// ==========================================
+// DEBUG TOOL
+// ==========================================
+
+const toolText =
+    document.getElementById(
+        "toolText"
+    );
+
+
+function updateToolDebug() {
+
+    const tool =
+        getCurrentTool();
+
+
+    toolText.textContent =
+        tool.name;
+
+}
+
+
+// ==========================================
+// BLOCK LOOKUP
 // ==========================================
 
 function getTile(
@@ -365,8 +853,6 @@ function getTile(
     worldY,
     layer
 ) {
-
-    // Underground
 
     if (layer === 1) {
 
@@ -376,23 +862,25 @@ function getTile(
                 worldY
             );
 
+
         if (ore) {
+
             return ore;
+
         }
 
+
         return "stone";
+
     }
 
-
-    // Ground
 
     if (layer === 2) {
 
         return "grass";
+
     }
 
-
-    // Build
 
     if (layer === 3) {
 
@@ -400,10 +888,12 @@ function getTile(
             worldX,
             worldY
         );
+
     }
 
 
     return null;
+
 }
 
 
@@ -414,14 +904,19 @@ function getTile(
 const images = {
 
     grass: new Image(),
+
     stone: new Image(),
 
     coal: new Image(),
+
     iron: new Image(),
+
     gold: new Image(),
+
     diamond: new Image(),
 
     log: new Image(),
+
     leaves: new Image(),
 
     player: new Image()
@@ -455,44 +950,6 @@ images.leaves.src =
 
 images.player.src =
     "assets/player/player.png";
-
-
-// ==========================================
-// FALLBACK COLORS
-// ==========================================
-
-function getTileColor(tile) {
-
-    switch (tile) {
-
-        case "grass":
-            return "#4f9c3d";
-
-        case "stone":
-            return "#777";
-
-        case "coal":
-            return "#333";
-
-        case "iron":
-            return "#b87355";
-
-        case "gold":
-            return "#d4af37";
-
-        case "diamond":
-            return "#35d6d0";
-
-        case "log":
-            return "#754c24";
-
-        case "leaves":
-            return "#247a32";
-
-    }
-
-    return "#000";
-}
 
 
 // ==========================================
@@ -546,31 +1003,65 @@ function drawTile(
 }
 
 
-// ==========================================
-// COLLISION TILE
-// ==========================================
+function getTileColor(tile) {
 
-function isSolidBuildTile(
-    worldX,
-    worldY
-) {
+    switch (tile) {
 
-    const tile =
-        getBuildTile(
-            worldX,
-            worldY
-        );
+        case "grass":
+            return "#4f9c3d";
 
-    return (
-        tile === "log" ||
-        tile === "leaves"
-    );
+        case "stone":
+            return "#777";
+
+        case "coal":
+            return "#333";
+
+        case "iron":
+            return "#b87355";
+
+        case "gold":
+            return "#d4af37";
+
+        case "diamond":
+            return "#35d6d0";
+
+        case "log":
+            return "#754c24";
+
+        case "leaves":
+            return "#247a32";
+
+    }
+
+
+    return "#000";
+
 }
 
 
 // ==========================================
 // PLAYER COLLISION
 // ==========================================
+
+function isSolidBuildTile(
+    x,
+    y
+) {
+
+    const tile =
+        getBuildTile(
+            x,
+            y
+        );
+
+
+    return (
+        tile === "log" ||
+        tile === "leaves"
+    );
+
+}
+
 
 function canPlayerMoveTo(
     newX,
@@ -647,37 +1138,38 @@ function canPlayerMoveTo(
 
 
     return true;
+
 }
 
 
 // ==========================================
-// MOVE PLAYER
+// PLAYER MOVEMENT
 // ==========================================
 
-function updatePlayer(deltaTime) {
+function updatePlayer(
+    deltaTime
+) {
 
     let dx = 0;
     let dy = 0;
 
 
     if (keys["w"]) {
-        dy -= 1;
+        dy--;
     }
 
     if (keys["s"]) {
-        dy += 1;
+        dy++;
     }
 
     if (keys["a"]) {
-        dx -= 1;
+        dx--;
     }
 
     if (keys["d"]) {
-        dx += 1;
+        dx++;
     }
 
-
-    // Normalize diagonal movement
 
     if (
         dx !== 0 &&
@@ -690,6 +1182,7 @@ function updatePlayer(deltaTime) {
                 dy * dy
             );
 
+
         dx /= length;
         dy /= length;
 
@@ -700,8 +1193,6 @@ function updatePlayer(deltaTime) {
         player.speed *
         deltaTime;
 
-
-    // X movement
 
     const newX =
         player.x +
@@ -715,12 +1206,11 @@ function updatePlayer(deltaTime) {
         )
     ) {
 
-        player.x = newX;
+        player.x =
+            newX;
 
     }
 
-
-    // Y movement
 
     const newY =
         player.y +
@@ -734,7 +1224,8 @@ function updatePlayer(deltaTime) {
         )
     ) {
 
-        player.y = newY;
+        player.y =
+            newY;
 
     }
 
@@ -742,7 +1233,7 @@ function updatePlayer(deltaTime) {
 
 
 // ==========================================
-// UPDATE CAMERA
+// CAMERA
 // ==========================================
 
 function updateCamera() {
@@ -751,9 +1242,655 @@ function updateCamera() {
         player.x -
         canvas.width / 2;
 
+
     camera.y =
         player.y -
         canvas.height / 2;
+
+}
+
+
+// ==========================================
+// MINING
+// ==========================================
+
+let mining = {
+
+    active: false,
+
+    x: null,
+    y: null,
+
+    layer: null,
+
+    progress: 0
+
+};
+
+
+// Base time = 5 seconds
+
+const BASE_BREAK_TIME = 5;
+
+
+// ==========================================
+// GET MOUSE WORLD TILE
+// ==========================================
+
+function getMouseWorldTile() {
+
+    const worldX =
+        Math.floor(
+            (
+                mouse.x +
+                camera.x
+            ) / TILE_SIZE
+        );
+
+
+    const worldY =
+        Math.floor(
+            (
+                mouse.y +
+                camera.y
+            ) / TILE_SIZE
+        );
+
+
+    return {
+        x: worldX,
+        y: worldY
+    };
+
+}
+
+
+// ==========================================
+// BREAK TIME
+// ==========================================
+
+function getBreakTime(blockId) {
+
+    const block =
+        BLOCKS[blockId];
+
+
+    if (!block) {
+
+        return 0;
+
+    }
+
+
+    const tool =
+        getCurrentTool();
+
+
+    // Tool speed directly reduces
+    // the breaking time.
+
+    return (
+        BASE_BREAK_TIME *
+        block.hardness /
+        5 /
+        tool.speed
+    );
+
+}
+
+
+// ==========================================
+// START MINING
+// ==========================================
+
+function updateMining(
+    deltaTime
+) {
+
+    if (
+        !mouse.left ||
+        inventoryOpen
+    ) {
+
+        resetMining();
+
+        return;
+
+    }
+
+
+    const target =
+        getMouseWorldTile();
+
+
+    const tile =
+        getTile(
+            target.x,
+            target.y,
+            currentLayer
+        );
+
+
+    if (!tile) {
+
+        resetMining();
+
+        return;
+
+    }
+
+
+    // Target changed
+
+    if (
+        mining.x !== target.x ||
+        mining.y !== target.y ||
+        mining.layer !== currentLayer
+    ) {
+
+        mining.x =
+            target.x;
+
+        mining.y =
+            target.y;
+
+        mining.layer =
+            currentLayer;
+
+        mining.progress = 0;
+
+        mining.active = true;
+
+    }
+
+
+    const breakTime =
+        getBreakTime(tile);
+
+
+    mining.progress +=
+        deltaTime /
+        breakTime;
+
+
+    if (
+        mining.progress >= 1
+    ) {
+
+        breakBlock(
+            target.x,
+            target.y,
+            currentLayer,
+            tile
+        );
+
+
+        resetMining();
+
+    }
+
+}
+
+
+function resetMining() {
+
+    mining.active =
+        false;
+
+    mining.x =
+        null;
+
+    mining.y =
+        null;
+
+    mining.layer =
+        null;
+
+    mining.progress =
+        0;
+
+}
+
+
+// ==========================================
+// BREAK BLOCK
+// ==========================================
+
+function breakBlock(
+    x,
+    y,
+    layer,
+    tile
+) {
+
+    console.log(
+        "Broken:",
+        tile,
+        x,
+        y,
+        "layer",
+        layer
+    );
+
+
+    // For now build-layer blocks
+    // are removed by keeping a local
+    // modification map.
+
+    setBlockOverride(
+        x,
+        y,
+        layer,
+        null
+    );
+
+
+    // Give drop
+
+    const block =
+        BLOCKS[tile];
+
+
+    if (
+        block &&
+        block.drop
+    ) {
+
+        addItem(
+            block.drop,
+            1
+        );
+
+    }
+
+}
+
+
+// ==========================================
+// WORLD OVERRIDES
+// ==========================================
+
+// Later this exact system gets sent
+// to Supabase in multiplayer.
+
+const blockOverrides =
+    new Map();
+
+
+function overrideKey(
+    x,
+    y,
+    layer
+) {
+
+    return (
+        `${x},${y},${layer}`
+    );
+
+}
+
+
+function setBlockOverride(
+    x,
+    y,
+    layer,
+    block
+) {
+
+    blockOverrides.set(
+        overrideKey(
+            x,
+            y,
+            layer
+        ),
+        block
+    );
+
+}
+
+
+function getBlockOverride(
+    x,
+    y,
+    layer
+) {
+
+    const key =
+        overrideKey(
+            x,
+            y,
+            layer
+        );
+
+
+    if (
+        blockOverrides.has(key)
+    ) {
+
+        return blockOverrides.get(
+            key
+        );
+
+    }
+
+
+    return undefined;
+
+}
+
+
+// ==========================================
+// ORIGINAL TILE WITH OVERRIDE
+// ==========================================
+
+function getActualTile(
+    x,
+    y,
+    layer
+) {
+
+    const override =
+        getBlockOverride(
+            x,
+            y,
+            layer
+        );
+
+
+    if (
+        override !== undefined
+    ) {
+
+        return override;
+
+    }
+
+
+    return getTile(
+        x,
+        y,
+        layer
+    );
+
+}
+
+
+// ==========================================
+// PLACE BLOCK
+// ==========================================
+
+function placeSelectedBlock() {
+
+    const item =
+        getSelectedItem();
+
+
+    if (!item) {
+
+        return;
+
+    }
+
+
+    // Tools cannot be placed
+
+    if (
+        TOOLS[item.id]
+    ) {
+
+        return;
+
+    }
+
+
+    const block =
+        item.id;
+
+
+    if (
+        !BLOCKS[block]
+    ) {
+
+        return;
+
+    }
+
+
+    // Build layer only
+
+    const target =
+        getMouseWorldTile();
+
+
+    const existing =
+        getActualTile(
+            target.x,
+            target.y,
+            3
+        );
+
+
+    if (existing) {
+
+        return;
+
+    }
+
+
+    // Don't place inside player
+
+    if (
+        playerIntersectsTile(
+            target.x,
+            target.y
+        )
+    ) {
+
+        return;
+
+    }
+
+
+    setBlockOverride(
+        target.x,
+        target.y,
+        3,
+        block
+    );
+
+
+    removeItem(
+        inventory.selectedHotbar,
+        1
+    );
+
+}
+
+
+function playerIntersectsTile(
+    tileX,
+    tileY
+) {
+
+    const left =
+        tileX * TILE_SIZE;
+
+    const top =
+        tileY * TILE_SIZE;
+
+    const right =
+        left + TILE_SIZE;
+
+    const bottom =
+        top + TILE_SIZE;
+
+
+    const playerLeft =
+        player.x -
+        player.width / 2;
+
+    const playerRight =
+        player.x +
+        player.width / 2;
+
+    const playerTop =
+        player.y -
+        player.height / 2;
+
+    const playerBottom =
+        player.y +
+        player.height / 2;
+
+
+    return (
+        playerRight > left &&
+        playerLeft < right &&
+        playerBottom > top &&
+        playerTop < bottom
+    );
+
+}
+
+
+// ==========================================
+// RIGHT CLICK
+// ==========================================
+
+canvas.addEventListener(
+    "click",
+    event => {
+
+        if (
+            event.button === 0
+        ) {
+
+            return;
+
+        }
+
+    }
+);
+
+
+canvas.addEventListener(
+    "mousedown",
+    event => {
+
+        if (
+            event.button === 2 &&
+            !inventoryOpen
+        ) {
+
+            placeSelectedBlock();
+
+        }
+
+    }
+);
+
+
+// ==========================================
+// INVENTORY ITEMS
+// ==========================================
+
+function addItem(
+    id,
+    amount
+) {
+
+    // First stack existing item
+
+    for (
+        let i = 0;
+        i < inventory.slots.length;
+        i++
+    ) {
+
+        const slot =
+            inventory.slots[i];
+
+
+        if (
+            slot &&
+            slot.id === id
+        ) {
+
+            slot.amount +=
+                amount;
+
+            return true;
+
+        }
+
+    }
+
+
+    // Find empty slot
+
+    for (
+        let i = 0;
+        i < inventory.slots.length;
+        i++
+    ) {
+
+        if (
+            !inventory.slots[i]
+        ) {
+
+            inventory.slots[i] = {
+
+                id,
+                amount
+
+            };
+
+
+            return true;
+
+        }
+
+    }
+
+
+    return false;
+
+}
+
+
+function removeItem(
+    slotIndex,
+    amount
+) {
+
+    const slot =
+        inventory.slots[
+            slotIndex
+        ];
+
+
+    if (!slot) {
+
+        return false;
+
+    }
+
+
+    slot.amount -=
+        amount;
+
+
+    if (
+        slot.amount <= 0
+    ) {
+
+        inventory.slots[
+            slotIndex
+        ] = null;
+
+    }
+
+
+    return true;
 
 }
 
@@ -764,70 +1901,58 @@ function updateCamera() {
 
 function renderGround() {
 
-    const startTileX =
+    const startX =
         Math.floor(
             camera.x / TILE_SIZE
         ) - 1;
 
 
-    const startTileY =
+    const startY =
         Math.floor(
             camera.y / TILE_SIZE
         ) - 1;
 
 
-    const endTileX =
-        startTileX +
+    const endX =
+        startX +
         Math.ceil(
             canvas.width / TILE_SIZE
-        ) +
-        3;
+        ) + 3;
 
 
-    const endTileY =
-        startTileY +
+    const endY =
+        startY +
         Math.ceil(
             canvas.height / TILE_SIZE
-        ) +
-        3;
+        ) + 3;
 
 
     for (
-        let worldY = startTileY;
-        worldY < endTileY;
-        worldY++
+        let y = startY;
+        y < endY;
+        y++
     ) {
 
         for (
-            let worldX = startTileX;
-            worldX < endTileX;
-            worldX++
+            let x = startX;
+            x < endX;
+            x++
         ) {
 
             const tile =
-                getTile(
-                    worldX,
-                    worldY,
+                getActualTile(
+                    x,
+                    y,
                     2
                 );
 
 
-            const screenX =
-                worldX *
-                TILE_SIZE -
-                camera.x;
-
-
-            const screenY =
-                worldY *
-                TILE_SIZE -
-                camera.y;
-
-
             drawTile(
                 tile,
-                Math.floor(screenX),
-                Math.floor(screenY)
+                x * TILE_SIZE -
+                    camera.x,
+                y * TILE_SIZE -
+                    camera.y
             );
 
         }
@@ -838,55 +1963,54 @@ function renderGround() {
 
 
 // ==========================================
-// RENDER BUILD LAYER
+// RENDER BUILD
 // ==========================================
 
-function renderBuildLayer() {
+function renderBuild() {
 
-    const startTileX =
+    const startX =
         Math.floor(
             camera.x / TILE_SIZE
         ) - 1;
 
 
-    const startTileY =
+    const startY =
         Math.floor(
             camera.y / TILE_SIZE
         ) - 1;
 
 
-    const endTileX =
-        startTileX +
+    const endX =
+        startX +
         Math.ceil(
             canvas.width / TILE_SIZE
-        ) +
-        3;
+        ) + 3;
 
 
-    const endTileY =
-        startTileY +
+    const endY =
+        startY +
         Math.ceil(
             canvas.height / TILE_SIZE
-        ) +
-        3;
+        ) + 3;
 
 
     for (
-        let worldY = startTileY;
-        worldY < endTileY;
-        worldY++
+        let y = startY;
+        y < endY;
+        y++
     ) {
 
         for (
-            let worldX = startTileX;
-            worldX < endTileX;
-            worldX++
+            let x = startX;
+            x < endX;
+            x++
         ) {
 
             const tile =
-                getBuildTile(
-                    worldX,
-                    worldY
+                getActualTile(
+                    x,
+                    y,
+                    3
                 );
 
 
@@ -895,22 +2019,12 @@ function renderBuildLayer() {
             }
 
 
-            const screenX =
-                worldX *
-                TILE_SIZE -
-                camera.x;
-
-
-            const screenY =
-                worldY *
-                TILE_SIZE -
-                camera.y;
-
-
             drawTile(
                 tile,
-                Math.floor(screenX),
-                Math.floor(screenY)
+                x * TILE_SIZE -
+                    camera.x,
+                y * TILE_SIZE -
+                    camera.y
             );
 
         }
@@ -926,70 +2040,58 @@ function renderBuildLayer() {
 
 function renderUnderground() {
 
-    const startTileX =
+    const startX =
         Math.floor(
             camera.x / TILE_SIZE
         ) - 1;
 
 
-    const startTileY =
+    const startY =
         Math.floor(
             camera.y / TILE_SIZE
         ) - 1;
 
 
-    const endTileX =
-        startTileX +
+    const endX =
+        startX +
         Math.ceil(
             canvas.width / TILE_SIZE
-        ) +
-        3;
+        ) + 3;
 
 
-    const endTileY =
-        startTileY +
+    const endY =
+        startY +
         Math.ceil(
             canvas.height / TILE_SIZE
-        ) +
-        3;
+        ) + 3;
 
 
     for (
-        let worldY = startTileY;
-        worldY < endTileY;
-        worldY++
+        let y = startY;
+        y < endY;
+        y++
     ) {
 
         for (
-            let worldX = startTileX;
-            worldX < endTileX;
-            worldX++
+            let x = startX;
+            x < endX;
+            x++
         ) {
 
             const tile =
-                getTile(
-                    worldX,
-                    worldY,
+                getActualTile(
+                    x,
+                    y,
                     1
                 );
 
 
-            const screenX =
-                worldX *
-                TILE_SIZE -
-                camera.x;
-
-
-            const screenY =
-                worldY *
-                TILE_SIZE -
-                camera.y;
-
-
             drawTile(
                 tile,
-                Math.floor(screenX),
-                Math.floor(screenY)
+                x * TILE_SIZE -
+                    camera.x,
+                y * TILE_SIZE -
+                    camera.y
             );
 
         }
@@ -1000,18 +2102,18 @@ function renderUnderground() {
 
 
 // ==========================================
-// RENDER PLAYER
+// PLAYER
 // ==========================================
 
 function renderPlayer() {
 
-    const screenX =
+    const x =
         player.x -
         camera.x -
         player.width / 2;
 
 
-    const screenY =
+    const y =
         player.y -
         camera.y -
         player.height / 2;
@@ -1024,8 +2126,8 @@ function renderPlayer() {
 
         ctx.drawImage(
             images.player,
-            Math.floor(screenX),
-            Math.floor(screenY),
+            Math.floor(x),
+            Math.floor(y),
             player.width,
             player.height
         );
@@ -1033,32 +2135,14 @@ function renderPlayer() {
     }
     else {
 
-        // Tijdelijke smiley fallback
-
-        ctx.fillStyle = "#ffd83d";
+        ctx.fillStyle =
+            "#ffd83d";
 
         ctx.fillRect(
-            screenX,
-            screenY,
+            x,
+            y,
             player.width,
             player.height
-        );
-
-
-        ctx.fillStyle = "#111";
-
-        ctx.fillRect(
-            screenX + 7,
-            screenY + 7,
-            3,
-            3
-        );
-
-        ctx.fillRect(
-            screenX + 18,
-            screenY + 7,
-            3,
-            3
         );
 
     }
@@ -1067,12 +2151,462 @@ function renderPlayer() {
 
 
 // ==========================================
+// BREAK PROGRESS
+// ==========================================
+
+function renderMiningProgress() {
+
+    if (
+        !mining.active ||
+        mining.x === null
+    ) {
+
+        return;
+
+    }
+
+
+    const screenX =
+        mining.x *
+        TILE_SIZE -
+        camera.x;
+
+
+    const screenY =
+        mining.y *
+        TILE_SIZE -
+        camera.y;
+
+
+    const size =
+        Math.max(
+            1,
+            Math.floor(
+                TILE_SIZE *
+                mining.progress
+            )
+        );
+
+
+    ctx.fillStyle =
+        "rgba(0, 0, 0, 0.75)";
+
+
+    ctx.fillRect(
+        screenX,
+        screenY,
+        size,
+        size
+    );
+
+}
+
+
+// ==========================================
+// INVENTORY UI UPDATE
+// ==========================================
+
+function renderInventoryUI() {
+
+    const slots =
+        document.querySelectorAll(
+            "#inventorySlots .inventorySlot"
+        );
+
+
+    slots.forEach(
+        (element, index) => {
+
+            element.innerHTML = "";
+
+
+            const item =
+                inventory.slots[index];
+
+
+            if (!item) {
+                return;
+            }
+
+
+            const image =
+                createItemImage(
+                    item.id
+                );
+
+
+            if (image) {
+
+                element.appendChild(
+                    image
+                );
+
+            }
+
+
+            const amount =
+                document.createElement(
+                    "span"
+                );
+
+
+            amount.className =
+                "itemAmount";
+
+
+            amount.textContent =
+                item.amount;
+
+
+            element.appendChild(
+                amount
+            );
+
+        }
+    );
+
+
+    renderHotbar();
+
+}
+
+
+function createItemImage(id) {
+
+    const image =
+        images[id] ||
+        toolImages[id];
+
+
+    if (
+        image &&
+        image.complete &&
+        (
+            image.naturalWidth > 0 ||
+            image.width > 0
+        )
+    ) {
+
+        const element =
+            document.createElement(
+                "img"
+            );
+
+
+        element.className =
+            "itemIcon";
+
+
+        element.src =
+            image.src;
+
+
+        return element;
+
+    }
+
+
+    return null;
+
+}
+
+
+function renderHotbar() {
+
+    const slots =
+        document.querySelectorAll(
+            ".hotbarSlot"
+        );
+
+
+    slots.forEach(
+        (element, index) => {
+
+            element.innerHTML = "";
+
+
+            const number =
+                document.createElement(
+                    "span"
+                );
+
+
+            number.className =
+                "slotNumber";
+
+
+            number.textContent =
+                index + 1;
+
+
+            element.appendChild(
+                number
+            );
+
+
+            const item =
+                inventory.slots[index];
+
+
+            if (!item) {
+                return;
+            }
+
+
+            const image =
+                createItemImage(
+                    item.id
+                );
+
+
+            if (image) {
+
+                element.appendChild(
+                    image
+                );
+
+            }
+
+
+            const amount =
+                document.createElement(
+                    "span"
+                );
+
+
+            amount.className =
+                "itemAmount";
+
+
+            amount.textContent =
+                item.amount;
+
+
+            element.appendChild(
+                amount
+            );
+
+        }
+    );
+
+}
+
+
+// ==========================================
+// CRAFTING
+// ==========================================
+
+function countItem(id) {
+
+    let total = 0;
+
+
+    for (
+        const slot
+        of inventory.slots
+    ) {
+
+        if (
+            slot &&
+            slot.id === id
+        ) {
+
+            total +=
+                slot.amount;
+
+        }
+
+    }
+
+
+    return total;
+
+}
+
+
+function canCraft(recipe) {
+
+    for (
+        const id
+        in recipe.ingredients
+    ) {
+
+        if (
+            countItem(id) <
+            recipe.ingredients[id]
+        ) {
+
+            return false;
+
+        }
+
+    }
+
+
+    return true;
+
+}
+
+
+function consumeItem(
+    id,
+    amount
+) {
+
+    for (
+        let i = 0;
+        i < inventory.slots.length;
+        i++
+    ) {
+
+        const slot =
+            inventory.slots[i];
+
+
+        if (
+            !slot ||
+            slot.id !== id
+        ) {
+
+            continue;
+
+        }
+
+
+        const take =
+            Math.min(
+                amount,
+                slot.amount
+            );
+
+
+        slot.amount -=
+            take;
+
+
+        amount -=
+            take;
+
+
+        if (
+            slot.amount <= 0
+        ) {
+
+            inventory.slots[i] =
+                null;
+
+        }
+
+
+        if (
+            amount <= 0
+        ) {
+
+            return;
+
+        }
+
+    }
+
+}
+
+
+function craft(recipe) {
+
+    if (
+        !canCraft(recipe)
+    ) {
+
+        return false;
+
+    }
+
+
+    for (
+        const id
+        in recipe.ingredients
+    ) {
+
+        consumeItem(
+            id,
+            recipe.ingredients[id]
+        );
+
+    }
+
+
+    addItem(
+        recipe.id,
+        recipe.output
+    );
+
+
+    renderInventoryUI();
+
+
+    return true;
+
+}
+
+
+// ==========================================
+// SIMPLE CRAFTING CLICK
+// ==========================================
+
+document.addEventListener(
+    "dblclick",
+    event => {
+
+        if (
+            !inventoryOpen
+        ) {
+
+            return;
+
+        }
+
+
+        if (
+            event.target.classList.contains(
+                "craftSlot"
+            )
+        ) {
+
+            // voorlopig:
+            // probeer recepten in volgorde
+
+            for (
+                const recipe
+                of RECIPES
+            ) {
+
+                if (
+                    canCraft(recipe)
+                ) {
+
+                    craft(recipe);
+
+                    break;
+
+                }
+
+            }
+
+        }
+
+    }
+);
+
+
+// ==========================================
 // RENDER
 // ==========================================
 
 function renderWorld() {
 
-    ctx.fillStyle = "#000";
+    ctx.fillStyle =
+        "#000";
+
 
     ctx.fillRect(
         0,
@@ -1082,7 +2616,9 @@ function renderWorld() {
     );
 
 
-    if (currentLayer === 1) {
+    if (
+        currentLayer === 1
+    ) {
 
         renderUnderground();
 
@@ -1091,12 +2627,12 @@ function renderWorld() {
 
         renderGround();
 
-        // Build layer ligt bovenop ground
-
-        renderBuildLayer();
+        renderBuild();
 
     }
 
+
+    renderMiningProgress();
 
     renderPlayer();
 
@@ -1112,10 +2648,12 @@ const layerText =
         "layerText"
     );
 
+
 const chunkText =
     document.getElementById(
         "chunkText"
     );
+
 
 const cameraText =
     document.getElementById(
@@ -1125,20 +2663,32 @@ const cameraText =
 
 function updateDebug() {
 
-    let layerName = "Ground";
+    let name =
+        "Ground";
 
 
-    if (currentLayer === 1) {
-        layerName = "Underground";
+    if (
+        currentLayer === 1
+    ) {
+
+        name =
+            "Underground";
+
     }
 
-    if (currentLayer === 3) {
-        layerName = "Build";
+
+    if (
+        currentLayer === 3
+    ) {
+
+        name =
+            "Build";
+
     }
 
 
     layerText.textContent =
-        layerName;
+        name;
 
 
     const chunkX =
@@ -1183,7 +2733,9 @@ function resizeCanvas() {
     canvas.height =
         window.innerHeight;
 
-    ctx.imageSmoothingEnabled = false;
+
+    ctx.imageSmoothingEnabled =
+        false;
 
 }
 
@@ -1213,21 +2765,30 @@ function gameLoop(time) {
         );
 
 
-    lastTime = time;
+    lastTime =
+        time;
 
 
-    updatePlayer(
-        deltaTime
-    );
+    if (!inventoryOpen) {
+
+        updatePlayer(
+            deltaTime
+        );
+
+        updateMining(
+            deltaTime
+        );
+
+    }
 
 
     updateCamera();
 
-
     renderWorld();
 
-
     updateDebug();
+
+    renderInventoryUI();
 
 
     requestAnimationFrame(
@@ -1242,6 +2803,8 @@ requestAnimationFrame(
 );
 
 
+updateToolDebug();
+
 console.log(
-    "World + player loaded successfully!"
+    "World + player + mining + building + inventory loaded!"
 );
