@@ -1348,9 +1348,7 @@ function getBreakTime(blockId) {
 // START MINING
 // ==========================================
 
-function updateMining(
-    deltaTime
-) {
+function updateMining(deltaTime) {
 
     if (
         !mouse.left ||
@@ -1358,65 +1356,70 @@ function updateMining(
     ) {
 
         resetMining();
-
         return;
 
     }
 
+    const target = getMouseWorldTile();
 
-    const target =
-        getMouseWorldTile();
+    // Zoek de hoogste zichtbare/bestaande laag
+    // vanaf de huidige spelerlaag omhoog.
+    let targetLayer = null;
+    let tile = null;
 
+    for (
+        let layer = 3;
+        layer >= currentLayer;
+        layer--
+    ) {
 
-    const tile =
-        getTile(
-            target.x,
-            target.y,
-            currentLayer
-        );
+        const found =
+            getActualTile(
+                target.x,
+                target.y,
+                layer
+            );
 
+        if (found) {
+
+            targetLayer = layer;
+            tile = found;
+
+            break;
+
+        }
+
+    }
 
     if (!tile) {
 
         resetMining();
-
         return;
 
     }
 
-
-    // Target changed
-
+    // Target veranderd
     if (
         mining.x !== target.x ||
         mining.y !== target.y ||
-        mining.layer !== currentLayer
+        mining.layer !== targetLayer
     ) {
 
-        mining.x =
-            target.x;
-
-        mining.y =
-            target.y;
-
-        mining.layer =
-            currentLayer;
+        mining.x = target.x;
+        mining.y = target.y;
+        mining.layer = targetLayer;
 
         mining.progress = 0;
-
         mining.active = true;
 
     }
 
-
     const breakTime =
         getBreakTime(tile);
-
 
     mining.progress +=
         deltaTime /
         breakTime;
-
 
     if (
         mining.progress >= 1
@@ -1425,10 +1428,9 @@ function updateMining(
         breakBlock(
             target.x,
             target.y,
-            currentLayer,
+            targetLayer,
             tile
         );
-
 
         resetMining();
 
