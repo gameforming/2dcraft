@@ -644,64 +644,94 @@ inventory.slots[0] = {
 
 const RECIPES = [
 
-    {
+    // ==========================
+    // LOG → PLANKS
+    // ==========================
 
+    {
+        id: "planks",
+        output: 4,
+
+        ingredients: {
+            log: 1
+        }
+    },
+
+
+    // ==========================
+    // PLANKS → STICKS
+    // ==========================
+
+    {
+        id: "stick",
+        output: 4,
+
+        ingredients: {
+            planks: 2
+        }
+    },
+
+
+    // ==========================
+    // WOODEN PICKAXE
+    // ==========================
+
+    {
         id: "wooden_pickaxe",
-
         output: 1,
 
         ingredients: {
-
-            log: 3
-
+            planks: 3,
+            stick: 2
         }
-
     },
 
-    {
 
+    // ==========================
+    // STONE PICKAXE
+    // ==========================
+
+    {
         id: "stone_pickaxe",
-
         output: 1,
 
         ingredients: {
-
-            stone: 3
-
+            stone: 3,
+            stick: 2
         }
-
     },
 
-    {
 
+    // ==========================
+    // IRON PICKAXE
+    // ==========================
+
+    {
         id: "iron_pickaxe",
-
         output: 1,
 
         ingredients: {
-
-            iron: 3
-
+            iron: 3,
+            stick: 2
         }
-
     },
 
+
+    // ==========================
+    // DIAMOND PICKAXE
+    // ==========================
+
     {
-
         id: "diamond_pickaxe",
-
         output: 1,
 
         ingredients: {
-
-            diamond: 3
-
+            diamond: 3,
+            stick: 2
         }
-
     }
 
 ];
-
 
 // ==========================================
 // INVENTORY UI
