@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>2D World Game</title>
+
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <!-- Bovenste menu -->
+    <div id="topBar">
+
+        <div id="gameTitle">
+            2D WORLD
+        </div>
+
+        <div id="gameControls">
+            <button id="singleplayerBtn">Singleplayer</button>
+            <button id="multiplayerBtn">Multiplayer</button>
+        </div>
+
+    </div>
+
+
+    <!-- Game -->
+    <canvas id="gameCanvas"></canvas>
+
+
+    <!-- Info -->
+    <div id="debug">
+        <div>Layer: <span id="layerText">Ground</span></div>
+        <div>Chunk: <span id="chunkText">0, 0</span></div>
+        <div>Camera: <span id="cameraText">0, 0</span></div>
+        <div>WASD = camera bewegen</div>
+        <div>1 = Underground | 2 = Ground | 3 = Build</div>
+    </div>
+
+
+    <script src="app.js"></script>
+
+</body>
+</html>
