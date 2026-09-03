@@ -335,7 +335,117 @@ function getBuildTile(
 // ==========================================
 // ORES
 // ==========================================
+function renderCraftingGrid() {
 
+    const slots =
+        document.querySelectorAll(
+            "#craftingGrid .craftSlot"
+        );
+
+
+    // 3x3 crafting grid
+    for (let i = 0; i < 9; i++) {
+
+        const element = slots[i];
+
+        if (!element) {
+            continue;
+        }
+
+        element.innerHTML = "";
+
+        const item =
+            craftingGrid[i];
+
+        if (!item) {
+            continue;
+        }
+
+        const image =
+            createItemImage(item.id);
+
+        if (image) {
+            element.appendChild(image);
+        }
+
+        if (item.amount > 1) {
+
+            const amount =
+                document.createElement("span");
+
+            amount.className =
+                "itemAmount";
+
+            amount.textContent =
+                item.amount;
+
+            element.appendChild(amount);
+
+        }
+
+    }
+
+
+    // Resultaat
+    const resultSlot =
+        document.getElementById(
+            "craftResult"
+        );
+
+    if (!resultSlot) {
+        return;
+    }
+
+    resultSlot.innerHTML = "";
+
+
+    let recipeFound = null;
+
+    for (const recipe of RECIPES) {
+
+        if (
+            craftingGridMatches(recipe)
+        ) {
+
+            recipeFound = recipe;
+            break;
+
+        }
+
+    }
+
+
+    if (!recipeFound) {
+        return;
+    }
+
+
+    const image =
+        createItemImage(
+            recipeFound.id
+        );
+
+    if (image) {
+        resultSlot.appendChild(image);
+    }
+
+
+    if (recipeFound.output > 1) {
+
+        const amount =
+            document.createElement("span");
+
+        amount.className =
+            "itemAmount";
+
+        amount.textContent =
+            recipeFound.output;
+
+        resultSlot.appendChild(amount);
+
+    }
+
+}
 function getOreAt(
     worldX,
     worldY
@@ -630,7 +740,307 @@ const TOOLS = {
 // ==========================================
 let draggedItem = null;
 let draggedFromSlot = null;
+let draggedFromCrafting = false;
 
+function setupCraftingMovement() {
+
+    const inventorySlots =
+        document.querySelectorAll(
+            "#inventorySlots .inventorySlot"
+        );
+
+    const craftSlots =
+        document.querySelectorAll(
+            "#craftingGrid .craftSlot"
+        );
+
+
+    // ==========================================
+    // INVENTORY → CRAFTING
+    // ==========================================
+
+    inventorySlots.forEach(
+        (element, inventoryIndex) => {
+
+            element.addEventListener(
+                "mousedown",
+                event => {
+
+                    if (event.button !== 0) {
+                        return;
+                    }
+
+                    if (!inventoryOpen) {
+                        return;
+                    }
+
+                    const item =
+                        inventory.slots[inventoryIndex];
+
+                    if (!item) {
+                        return;
+                    }
+
+                    draggedItem = {
+                        id: item.id,
+                        amount: 1
+                    };
+
+                    draggedFromSlot =
+                        inventoryIndex;
+
+                    draggedFromCrafting =
+                        false;
+
+                    event.preventDefault();
+
+                }
+            );
+
+        }
+    );
+
+
+    // ==========================================
+    // CRAFTING SLOTS
+    // ==========================================
+
+    craftSlots.forEach(
+        (element, craftIndex) => {
+
+            element.addEventListener(
+                "mousedown",
+                event => {
+
+                    if (event.button !== 0) {
+                        return;
+                    }
+
+                    if (!inventoryOpen) {
+                        return;
+                    }
+
+                    const item =
+                        craftingGrid[craftIndex];
+
+                    if (!item) {
+                        return;
+                    }
+
+                    draggedItem = {
+                        id: item.id,
+                        amount: 1
+                    };
+
+                    draggedFromCrafting = true;
+
+                    draggedFromSlot =
+                        craftIndex;
+
+                    event.preventDefault();
+
+                }
+            );
+
+
+            element.addEventListener(
+                "mouseup",
+                event => {
+
+                    if (event.button !== 0) {
+                        return;
+                    }
+
+                    if (
+                        !draggedItem ||
+                        draggedFromSlot === null
+                    ) {
+                        return;
+                    }
+
+
+                    // ==================================
+                    // INVENTORY → CRAFTING
+                    // ==================================
+
+                    if (!draggedFromCrafting) {
+
+                        const inventoryItem =
+                            inventory.slots[
+                                draggedFromSlot
+                            ];
+
+                        if (!inventoryItem) {
+                            resetDragging();
+                            return;
+                        }
+
+                        const target =
+                            craftingGrid[
+                                craftIndex
+                            ];
+
+
+                        // Lege crafting slot
+                        if (!target) {
+
+                            craftingGrid[
+                                craftIndex
+                            ] = {
+                                id: inventoryItem.id,
+                                amount: 1
+                            };
+
+                            inventoryItem.amount--;
+
+                            if (
+                                inventoryItem.amount <= 0
+                            ) {
+
+                                inventory.slots[
+                                    draggedFromSlot
+                                ] = null;
+
+                            }
+
+                        }
+
+                        // Zelfde item → één erbij
+                        else if (
+                            target.id ===
+                            inventoryItem.id
+                        ) {
+
+                            target.amount++;
+
+                            inventoryItem.amount--;
+
+                            if (
+                                inventoryItem.amount <= 0
+                            ) {
+
+                                inventory.slots[
+                                    draggedFromSlot
+                                ] = null;
+
+                            }
+
+                        }
+
+                    }
+
+
+                    // ==================================
+                    // CRAFTING → ANDERE CRAFTING SLOT
+                    // ==================================
+
+                    else {
+
+                        if (
+                            draggedFromSlot ===
+                            craftIndex
+                        ) {
+
+                            resetDragging();
+                            return;
+
+                        }
+
+                        const source =
+                            craftingGrid[
+                                draggedFromSlot
+                            ];
+
+                        const target =
+                            craftingGrid[
+                                craftIndex
+                            ];
+
+
+                        if (!target) {
+
+                            craftingGrid[
+                                craftIndex
+                            ] = source;
+
+                            craftingGrid[
+                                draggedFromSlot
+                            ] = null;
+
+                        }
+                        else if (
+                            target.id ===
+                            source.id
+                        ) {
+
+                            target.amount +=
+                                source.amount;
+
+                            craftingGrid[
+                                draggedFromSlot
+                            ] = null;
+
+                        }
+                        else {
+
+                            craftingGrid[
+                                draggedFromSlot
+                            ] = target;
+
+                            craftingGrid[
+                                craftIndex
+                            ] = source;
+
+                        }
+
+                    }
+
+
+                    resetDragging();
+
+                    renderCraftingGrid();
+                    renderInventoryUI();
+
+                }
+            );
+
+        }
+    );
+
+
+    // ==========================================
+    // CRAFT RESULT
+    // ==========================================
+
+    const resultSlot =
+        document.getElementById(
+            "craftResult"
+        );
+
+
+    resultSlot.addEventListener(
+        "click",
+        event => {
+
+            if (!inventoryOpen) {
+                return;
+            }
+
+            craftFromGrid();
+
+        }
+    );
+
+}
+
+
+function resetDragging() {
+
+    draggedItem = null;
+    draggedFromSlot = null;
+    draggedFromCrafting = false;
+
+}
 function setupInventoryMovement() {
 
     const slots = document.querySelectorAll(
@@ -860,22 +1270,58 @@ function craftingGridMatches(recipe) {
 
     return true;
 }
+function canAddItem(id, amount) {
+
+    // Bestaande stack?
+    for (const slot of inventory.slots) {
+
+        if (
+            slot &&
+            slot.id === id
+        ) {
+
+            return true;
+
+        }
+
+    }
+
+    // Vrij slot?
+    for (const slot of inventory.slots) {
+
+        if (!slot) {
+            return true;
+        }
+
+    }
+
+    return false;
+}
+
 function craftFromGrid() {
 
     let recipeFound = null;
 
     for (const recipe of RECIPES) {
+
         if (craftingGridMatches(recipe)) {
             recipeFound = recipe;
             break;
         }
+
     }
 
     if (!recipeFound) {
         return false;
     }
 
-    // Haal één item uit iedere gebruikte crafting slot
+    // Eerst proberen resultaat toe te voegen
+    // zodat we geen materialen verliezen als inventory vol is.
+    if (!canAddItem(recipeFound.id, recipeFound.output)) {
+        return false;
+    }
+
+    // Materialen uit crafting grid halen
     for (let i = 0; i < 9; i++) {
 
         if (!craftingGrid[i]) {
@@ -887,11 +1333,15 @@ function craftFromGrid() {
         if (craftingGrid[i].amount <= 0) {
             craftingGrid[i] = null;
         }
+
     }
 
-    // Resultaat naar inventory
-    addItem(recipeFound.id, recipeFound.output);
+    addItem(
+        recipeFound.id,
+        recipeFound.output
+    );
 
+    renderCraftingGrid();
     renderInventoryUI();
 
     return true;
@@ -2616,166 +3066,7 @@ function renderHotbar() {
 }
 
 
-// ==========================================
-// CRAFTING
-// ==========================================
 
-function countItem(id) {
-
-    let total = 0;
-
-
-    for (
-        const slot
-        of inventory.slots
-    ) {
-
-        if (
-            slot &&
-            slot.id === id
-        ) {
-
-            total +=
-                slot.amount;
-
-        }
-
-    }
-
-
-    return total;
-
-}
-
-
-function canCraft(recipe) {
-
-    for (
-        const id
-        in recipe.ingredients
-    ) {
-
-        if (
-            countItem(id) <
-            recipe.ingredients[id]
-        ) {
-
-            return false;
-
-        }
-
-    }
-
-
-    return true;
-
-}
-
-
-function consumeItem(
-    id,
-    amount
-) {
-
-    for (
-        let i = 0;
-        i < inventory.slots.length;
-        i++
-    ) {
-
-        const slot =
-            inventory.slots[i];
-
-
-        if (
-            !slot ||
-            slot.id !== id
-        ) {
-
-            continue;
-
-        }
-
-
-        const take =
-            Math.min(
-                amount,
-                slot.amount
-            );
-
-
-        slot.amount -=
-            take;
-
-
-        amount -=
-            take;
-
-
-        if (
-            slot.amount <= 0
-        ) {
-
-            inventory.slots[i] =
-                null;
-
-        }
-
-
-        if (
-            amount <= 0
-        ) {
-
-            return;
-
-        }
-
-    }
-
-}
-
-
-function craft(recipe) {
-
-    if (
-        !canCraft(recipe)
-    ) {
-
-        return false;
-
-    }
-
-
-    for (
-        const id
-        in recipe.ingredients
-    ) {
-
-        consumeItem(
-            id,
-            recipe.ingredients[id]
-        );
-
-    }
-
-
-    addItem(
-        recipe.id,
-        recipe.output
-    );
-
-
-    renderInventoryUI();
-
-
-    return true;
-
-}
-
-
-// ==========================================
-// SIMPLE CRAFTING CLICK
-// ==========================================
 
 document.addEventListener(
     "dblclick",
@@ -2983,6 +3274,7 @@ resizeCanvas();
 let lastTime = 0;
 
 setupInventoryMovement();
+setupCraftingMovement();
 function gameLoop(time) {
 
     const deltaTime =
