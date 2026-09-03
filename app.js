@@ -742,7 +742,7 @@ let draggedItem = null;
 let draggedFromSlot = null;
 let draggedFromCrafting = false;
 
-let draggedFromCrafting = false;
+
 
 function setupCraftingMovement() {
     const craftSlots = document.querySelectorAll("#craftingGrid .craftSlot");
