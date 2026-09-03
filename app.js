@@ -2386,12 +2386,246 @@ function removeItem(
     return true;
 
 }
+// ======================================================
+// KEYBOARD PICKUP IN INVENTORY
+// ======================================================
 
+let keyboardHeldItem = null;
+let keyboardHeldFrom = null;
+let keyboardHeldFromCrafting = false;
+
+document.addEventListener("keydown", (event) => {
+    // Inventory moet open zijn
+    if (!inventoryOpen) return;
+
+    // Alleen 1 t/m 9
+    if (event.key < "1" || event.key > "9") return;
+
+    const slotIndex = Number(event.key) - 1;
+
+    // Kijk waar de muis op staat
+    const element = document.elementFromPoint(
+        inventoryMouseX,
+        inventoryMouseY
+    );
+
+    if (!element) return;
+
+    const inventorySlot = element.closest(
+        "#inventorySlots .inventorySlot"
+    );
+
+    const craftSlot = element.closest(
+        "#craftingGrid .craftSlot"
+    );
+
+    // ------------------------------------------
+    // INVENTORY SLOT
+    // ------------------------------------------
+
+    if (inventorySlot) {
+        const slots = [
+            ...document.querySelectorAll(
+                "#inventorySlots .inventorySlot"
+            )
+        ];
+
+        const index = slots.indexOf(inventorySlot);
+
+        if (index === -1) return;
+
+        const item = inventory.slots[index];
+
+        if (!item) return;
+
+        keyboardHeldItem = {
+            id: item.id,
+            amount: item.amount
+        };
+
+        keyboardHeldFrom = index;
+        keyboardHeldFromCrafting = false;
+
+        // Haal item tijdelijk uit inventory
+        inventory.slots[index] = null;
+
+        renderInventoryUI();
+
+        return;
+    }
+
+    // ------------------------------------------
+    // CRAFTING SLOT
+    // ------------------------------------------
+
+    if (craftSlot) {
+        const slots = [
+            ...document.querySelectorAll(
+                "#craftingGrid .craftSlot"
+            )
+        ];
+
+        const index = slots.indexOf(craftSlot);
+
+        if (index === -1) return;
+
+        const item = craftingGrid[index];
+
+        if (!item) return;
+
+        keyboardHeldItem = {
+            id: item.id,
+            amount: item.amount
+        };
+
+        keyboardHeldFrom = index;
+        keyboardHeldFromCrafting = true;
+
+        craftingGrid[index] = null;
+
+        renderCraftingGrid();
+
+        return;
+    }
+});
+
+let inventoryMouseX = 0;
+let inventoryMouseY = 0;
+
+document.addEventListener("mousemove", (event) => {
+    inventoryMouseX = event.clientX;
+    inventoryMouseY = event.clientY;
+});
 
 // ==========================================
 // RENDER GROUND
 // ==========================================
+document.addEventListener("mousedown", (event) => {
+    if (!inventoryOpen) return;
+    if (event.button !== 0) return;
 
+    if (!keyboardHeldItem) return;
+
+    const element = document.elementFromPoint(
+        event.clientX,
+        event.clientY
+    );
+
+    if (!element) return;
+
+    // ------------------------------------------
+    // INVENTORY
+    // ------------------------------------------
+
+    const inventorySlot = element.closest(
+        "#inventorySlots .inventorySlot"
+    );
+
+    if (inventorySlot) {
+        const slots = [
+            ...document.querySelectorAll(
+                "#inventorySlots .inventorySlot"
+            )
+        ];
+
+        const index = slots.indexOf(inventorySlot);
+
+        if (index === -1) return;
+
+        const target = inventory.slots[index];
+
+        if (!target) {
+            inventory.slots[index] = {
+                id: keyboardHeldItem.id,
+                amount: keyboardHeldItem.amount
+            };
+        }
+        else if (target.id === keyboardHeldItem.id) {
+            target.amount += keyboardHeldItem.amount;
+        }
+        else {
+            // Wisselen
+            inventory.slots[index] = {
+                id: keyboardHeldItem.id,
+                amount: keyboardHeldItem.amount
+            };
+
+            if (keyboardHeldFromCrafting) {
+                craftingGrid[keyboardHeldFrom] = {
+                    id: target.id,
+                    amount: target.amount
+                };
+            }
+            else {
+                inventory.slots[keyboardHeldFrom] = {
+                    id: target.id,
+                    amount: target.amount
+                };
+            }
+        }
+
+        keyboardHeldItem = null;
+        keyboardHeldFrom = null;
+        keyboardHeldFromCrafting = false;
+
+        renderInventoryUI();
+        renderCraftingGrid();
+
+        return;
+    }
+
+    // ------------------------------------------
+    // CRAFTING
+    // ------------------------------------------
+
+    const craftSlot = element.closest(
+        "#craftingGrid .craftSlot"
+    );
+
+    if (craftSlot) {
+        const slots = [
+            ...document.querySelectorAll(
+                "#craftingGrid .craftSlot"
+            )
+        ];
+
+        const index = slots.indexOf(craftSlot);
+
+        if (index === -1) return;
+
+        const target = craftingGrid[index];
+
+        if (!target) {
+            craftingGrid[index] = {
+                id: keyboardHeldItem.id,
+                amount: keyboardHeldItem.amount
+            };
+        }
+        else if (target.id === keyboardHeldItem.id) {
+            target.amount += keyboardHeldItem.amount;
+        }
+        else {
+            craftingGrid[index] = {
+                id: keyboardHeldItem.id,
+                amount: keyboardHeldItem.amount
+            };
+
+            if (keyboardHeldFromCrafting) {
+                craftingGrid[keyboardHeldFromCrafting] = target;
+            }
+            else {
+                inventory.slots[keyboardHeldFrom] = target;
+            }
+        }
+
+        keyboardHeldItem = null;
+        keyboardHeldFrom = null;
+        keyboardHeldFromCrafting = false;
+
+        renderInventoryUI();
+        renderCraftingGrid();
+    }
+});
 function renderGround() {
 
     const startX =
