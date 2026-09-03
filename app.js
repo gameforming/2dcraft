@@ -544,21 +544,23 @@ const BLOCKS = {
         drop: "log"
     },
 
-    leaves: {
-        hardness: 1,
-        drop: null
-    },
     planks: {
         hardness: 5,
         drop: "planks"
     },
 
-        stick: {
-            hardness: 1,
-            drop: "stick"
-    },
-};
+    leaves: {
+        hardness: 1,
+        drop: null
+    }
 
+};
+const ITEMS = {
+    stick: {
+        name: "Stick",
+        maxStack: 64
+    }
+};
 
 // ==========================================
 // TOOLS
@@ -635,97 +637,112 @@ function setupInventoryMovement() {
         "#inventorySlots .inventorySlot"
     );
 
-    slots.forEach(
-        (element, index) => {
+    slots.forEach((element, index) => {
 
-            element.addEventListener(
-                "mousedown",
-                event => {
+        element.addEventListener(
+            "mousedown",
+            event => {
 
-                    if (!inventoryOpen) {
-                        return;
-                    }
-
-                    const item =
-                        inventory.slots[index];
-
-                    if (!item) {
-                        return;
-                    }
-
-                    draggedItem =
-                        item;
-
-                    draggedFromSlot =
-                        index;
-
-                    event.preventDefault();
-
+                // ALLEEN LINKERMUISKNOP
+                if (event.button !== 0) {
+                    return;
                 }
-            );
+
+                if (!inventoryOpen) {
+                    return;
+                }
+
+                const item =
+                    inventory.slots[index];
+
+                if (!item) {
+                    return;
+                }
+
+                draggedItem = {
+                    id: item.id,
+                    amount: item.amount
+                };
+
+                draggedFromSlot = index;
+
+                event.preventDefault();
+
+            }
+        );
 
 
-            element.addEventListener(
-                "mouseup",
-                event => {
+        element.addEventListener(
+            "mouseup",
+            event => {
 
-                    if (
-                        draggedFromSlot === null
-                    ) {
-                        return;
-                    }
+                // ALLEEN LINKERMUISKNOP
+                if (event.button !== 0) {
+                    return;
+                }
 
-                    const targetItem =
-                        inventory.slots[index];
+                if (
+                    draggedFromSlot === null ||
+                    !draggedItem
+                ) {
+                    return;
+                }
 
-
-                    // Zelfde item:
-                    // stack samen
-
-                    if (
-                        targetItem &&
-                        targetItem.id ===
-                        draggedItem.id
-                    ) {
-
-                        targetItem.amount +=
-                            draggedItem.amount;
-
-                        inventory.slots[
-                            draggedFromSlot
-                        ] = null;
-
-                    }
-
-                    else {
-
-                        const old =
-                            inventory.slots[index];
+                const targetItem =
+                    inventory.slots[index];
 
 
-                        inventory.slots[index] =
-                            draggedItem;
-
-
-                        inventory.slots[
-                            draggedFromSlot
-                        ] = old;
-
-                    }
-
+                // Op zichzelf klikken
+                if (
+                    draggedFromSlot === index
+                ) {
 
                     draggedItem = null;
-
                     draggedFromSlot = null;
-
 
                     renderInventoryUI();
 
+                    return;
                 }
-            );
 
-        }
-    );
+
+                // Zelfde item → stacken
+                if (
+                    targetItem &&
+                    targetItem.id === draggedItem.id
+                ) {
+
+                    targetItem.amount +=
+                        draggedItem.amount;
+
+                    inventory.slots[
+                        draggedFromSlot
+                    ] = null;
+
+                }
+
+                // Ander item → omwisselen
+                else {
+
+                    inventory.slots[index] =
+                        draggedItem;
+
+                    inventory.slots[
+                        draggedFromSlot
+                    ] = targetItem;
+
+                }
+
+
+                draggedItem = null;
+                draggedFromSlot = null;
+
+                renderInventoryUI();
+
+            }
+        );
+
+    });
 
 }
 const inventory = {
@@ -750,98 +767,153 @@ inventory.slots[0] = {
 // ==========================================
 // CRAFTING RECIPES
 // ==========================================
-
+const craftingGrid = Array(9).fill(null);
 const RECIPES = [
-
-    // ==========================
-    // LOG → PLANKS
-    // ==========================
-
     {
         id: "planks",
         output: 4,
 
-        ingredients: {
-            log: 1
-        }
+        pattern: [
+            "log", null, null,
+            null, null, null,
+            null, null, null
+        ]
     },
-
-
-    // ==========================
-    // PLANKS → STICKS
-    // ==========================
 
     {
         id: "stick",
         output: 4,
 
-        ingredients: {
-            planks: 2
-        }
+        pattern: [
+            "planks", null, null,
+            "planks", null, null,
+            null, null, null
+        ]
     },
-
-
-    // ==========================
-    // WOODEN PICKAXE
-    // ==========================
 
     {
         id: "wooden_pickaxe",
         output: 1,
 
-        ingredients: {
-            planks: 3,
-            stick: 2
-        }
+        pattern: [
+            "planks", "planks", "planks",
+            null, "stick", null,
+            null, "stick", null
+        ]
     },
-
-
-    // ==========================
-    // STONE PICKAXE
-    // ==========================
 
     {
         id: "stone_pickaxe",
         output: 1,
 
-        ingredients: {
-            stone: 3,
-            stick: 2
-        }
+        pattern: [
+            "stone", "stone", "stone",
+            null, "stick", null,
+            null, "stick", null
+        ]
     },
-
-
-    // ==========================
-    // IRON PICKAXE
-    // ==========================
 
     {
         id: "iron_pickaxe",
         output: 1,
 
-        ingredients: {
-            iron: 3,
-            stick: 2
-        }
+        pattern: [
+            "iron", "iron", "iron",
+            null, "stick", null,
+            null, "stick", null
+        ]
     },
-
-
-    // ==========================
-    // DIAMOND PICKAXE
-    // ==========================
 
     {
         id: "diamond_pickaxe",
         output: 1,
 
-        ingredients: {
-            diamond: 3,
-            stick: 2
+        pattern: [
+            "diamond", "diamond", "diamond",
+            null, "stick", null,
+            null, "stick", null
+        ]
+    }
+];
+function craftingGridMatches(recipe) {
+    for (let i = 0; i < 9; i++) {
+
+        const actual = craftingGrid[i];
+        const expected = recipe.pattern[i];
+
+        if (expected === null) {
+            if (actual !== null) {
+                return false;
+            }
+
+            continue;
+        }
+
+        if (!actual) {
+            return false;
+        }
+
+        if (actual.id !== expected) {
+            return false;
         }
     }
 
-];
+    return true;
+}
+function craftFromGrid() {
 
+    let recipeFound = null;
+
+    for (const recipe of RECIPES) {
+        if (craftingGridMatches(recipe)) {
+            recipeFound = recipe;
+            break;
+        }
+    }
+
+    if (!recipeFound) {
+        return false;
+    }
+
+    // Haal één item uit iedere gebruikte crafting slot
+    for (let i = 0; i < 9; i++) {
+
+        if (!craftingGrid[i]) {
+            continue;
+        }
+
+        craftingGrid[i].amount--;
+
+        if (craftingGrid[i].amount <= 0) {
+            craftingGrid[i] = null;
+        }
+    }
+
+    // Resultaat naar inventory
+    addItem(recipeFound.id, recipeFound.output);
+
+    renderInventoryUI();
+
+    return true;
+}
+function addToCraftingSlot(slotIndex, itemId) {
+
+    if (slotIndex < 0 || slotIndex >= 9) {
+        return false;
+    }
+
+    const inventoryItem = getSelectedItem();
+
+    if (!inventoryItem) {
+        return false;
+    }
+
+    if (inventoryItem.id !== itemId) {
+        return false;
+    }
+
+    return true;
+}
 // ==========================================
 // INVENTORY UI
 // ==========================================
@@ -1064,9 +1136,13 @@ const images = {
     leaves: new Image(),
 
     player: new Image()
-
+    
 };
+images.planks = new Image();
+images.planks.src = "assets/tiles/planks.png";
 
+images.stick = new Image();
+images.stick.src = "assets/items/stick.png";
 
 images.grass.src =
     "assets/tiles/grass.png";
@@ -1095,7 +1171,11 @@ images.leaves.src =
 images.player.src =
     "assets/player/player.png";
 
+images.planks.src =
+    "assets/tiles/planks.png";
 
+images.stick.src =
+    "assets/items/stick.png";
 // ==========================================
 // DRAW TILE
 // ==========================================
